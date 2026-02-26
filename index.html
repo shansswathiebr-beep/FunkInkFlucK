@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>FUNKENFLUG</title>
+    
+    <style>
+        :root {
+            --gold: #d4a574;
+            --gold-muted: rgba(212, 165, 116, 0.2);
+            --bg-card: #121212;
+            --danger: #ff2d55;
+            --quiz: #5856d6;
+            --tabu: #34c759;
+            --zündstoff: #ff3b30;
+            --safe-top: env(safe-area-inset-top, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            padding: 20px;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+            position: relative;
+        }
+
+        .screen.active { display: flex; }
+
+        /* Watermark & Stats */
+        .watermark {
+            position: fixed;
+            bottom: 5px;
+            width: 100%;
+            text-align: center;
+            font-size: 9px;
+            color: rgba(212, 165, 116, 0.15);
+            pointer-events: none;
+            z-index: 1000;
+            font-family: monospace;
+        }
+
+        .mode-indicator {
+            position: fixed;
+            top: var(--safe-top);
+            right: 20px;
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.1);
+            z-index: 50;
+        }
+
+        .mode-indicator.action { color: var(--gold); border: 1px solid var(--gold-muted); }
+        .mode-indicator.quiz { color: var(--quiz); border: 1px solid rgba(88,86,214,0.3); }
+        .mode-indicator.tabu { color: var(--tabu); border: 1px solid rgba(52,199,89,0.3); }
+        .mode-indicator.zündstoff { color: var(--zündstoff); border: 1px solid rgba(255,59,48,0.3); }
+
+        /* Start Screen */
+        #startScreen {
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+        }
+
+        .logo {
+            font-size: 14vw;
+            font-weight: 200;
+            letter-spacing: 0.15em;
+            background: linear-gradient(to right, var(--gold), #e8b4b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            line-height: 1;
+            margin-bottom: 5vh;
+        }
+
+        .logo-sub {
+            color: rgba(255,255,255,0.4);
+            font-size: 14px;
+            letter-spacing: 0.3em;
+            margin-bottom: 10vh;
+            text-transform: uppercase;
+        }
+
+        /* Setup Screen */
+        .setup-header {
+            margin-bottom: 20px;
+        }
+
+        .setup-header h2 {
+            color: var(--gold);
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .setup-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .player-list {
+            flex: 1;
+            overflow-y: auto;
+            margin: 10px 0;
+            padding-bottom: 120px;
+        }
+
+        .player-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } }
+
+        .player-input input {
+            flex: 1;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 18px;
+            border-radius: 15px;
+            color: #fff;
+            font-size: 16px !important;
+        }
+
+        .player-input input:focus { border-color: var(--gold); outline: none; }
+
+        .remove-player {
+            background: rgba(255,45,85,0.2);
+            border: none;
+            color: var(--danger);
+            width: 50px;
+            border-radius: 15px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        /* Game Screen Header */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+
+        #currentPlayer {
+            font-size: 18px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gold);
+        }
+
+        .clothes-count {
+            font-size: 18px;
+            letter-spacing: 2px;
+        }
+
+        /* Gameplay Content */
+        .game-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .dice-wrapper {
+            display: flex;
+            gap: 20px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .dice-wrapper:active { transform: scale(0.95); }
+
+        .die {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
+            border: 1px solid var(--gold-muted);
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 35px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .die::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.05), transparent);
+            transform: rotate(45deg);
+        }
+
+        .die.rolling { animation: shake 0.5s infinite; }
+
+        @keyframes shake {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(-10deg) scale(1.05); }
+            75% { transform: rotate(10deg) scale(1.05); }
+        }
+
+        /* Cards */
+        .card-container {
+            width: 100%;
+            max-width: 400px;
+            perspective: 1000px;
+            display: none;
+        }
+
+        .card-container.active { display: block; animation: cardFlip 0.6s ease-out; }
+
+        @keyframes cardFlip {
+            from { opacity: 0; transform: rotateY(-15deg) scale(0.9); }
+            to { opacity: 1; transform: rotateY(0) scale(1); }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 30px;
+            padding: 35px 25px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+
+        .card.action::before { background: var(--gold); }
+        .card.quiz::before { background: var(--quiz); }
+        .card.tabu::before { background: var(--tabu); }
+        .card.zündstoff::before { background: var(--zündstoff); }
+
+        .card-label {
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .card.action .card-label { color: var(--gold); }
+        .card.quiz .card-label { color: var(--quiz); }
+        .card.tabu .card-label { color: var(--tabu); }
+        .card.zündstoff .card-label { color: var(--zündstoff); }
+
+        .card-text {
+            font-size: 22px;
+            line-height: 1.4;
+            font-weight: 300;
+            margin-bottom: 25px;
+        }
+
+        .card-sub {
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+            font-style: italic;
+        }
+
+        /* Tabu Specific */
+        .tabu-word {
+            font-size: 36px;
+            font-weight: 700;
+            color: #fff;
+            margin: 20px 0;
+            letter-spacing: 1px;
+        }
+
+        .tabu-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .tabu-item {
+            background: rgba(255,59,48,0.2);
+            color: var(--zündstoff);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* Quiz Specific */
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .quiz-option {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 16px;
+        }
+
+        .quiz-option:hover { background: rgba(255,255,255,0.1); }
+        .quiz-option.correct { background: rgba(52,199,89,0.3); border-color: var(--tabu); }
+        .quiz-option.wrong { background: rgba(255,45,85,0.3); border-color: var(--danger); }
+
+        .quiz-answer-reveal {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(88,86,214,0.2);
+            border-radius: 15px;
+            font-size: 16px;
+            display: none;
+        }
+
+        /* Buttons & Footer */
+        .footer-actions {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            padding-bottom: calc(var(--safe-bottom) + 10px);
+            background: linear-gradient(to top, #000 85%, transparent);
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .btn {
+            flex: 1;
+            height: 60px;
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .btn-gold {
+            background: var(--gold);
+            color: #000;
+            border: none;
+        }
+
+        .btn:disabled { opacity: 0.3; pointer-events: none; }
+
+        .btn:active { transform: scale(0.95); }
+
+        .hidden { display: none !important; }
+
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .mode-btn {
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: transparent;
+            color: #fff;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: var(--gold);
+            color: #000;
+            border-color: var(--gold);
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: var(--gold);
+            transition: width 0.3s;
+            z-index: 1001;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+    <div class="watermark">© 2026 Hans-Swathi Srikandaraja • 27804 Berne</div>
+
+    <!-- START SCREEN -->
+    <div id="startScreen" class="screen active">
+        <div class="logo">FUNKEN<br>FLUG</div>
+        <div class="logo-sub">Premium Edition</div>
+        <button class="btn btn-gold" style="max-width: 280px; margin-bottom: 15px;" onclick="showScreen('setupScreen')">Neues Spiel</button>
+        <button class="btn" style="max-width: 280px;" onclick="showRules()">Spielregeln</button>
+    </div>
+
+    <!-- SETUP SCREEN -->
+    <div id="setupScreen" class="screen">
+        <div class="setup-header">
+            <h2>Spieler</h2>
+            <p>Mindestens 2 Spieler erforderlich</p>
+        </div>
+        
+        <div class="player-list" id="playerList"></div>
+
+        <div class="footer-actions">
+            <button class="btn" onclick="addPlayer()">+ Hinzufügen</button>
+            <button class="btn btn-gold" id="startBtn" onclick="startGame()" disabled>Starten</button>
+        </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="gameScreen" class="screen">
+        <div class="mode-indicator" id="modeIndicator" style="display:none">Action</div>
+        
+        <div class="game-header">
+            <div id="currentPlayer">Name</div>
+            <div class="clothes-count" id="clothesDisplay">👕👕👕👕👕</div>
+        </div>
+
+        <div class="game-content" id="gameContent">
+            
+            <!-- Dice View -->
+            <div id="diceView" class="dice-wrapper" onclick="roll()">
+                <div class="die" id="die1">🎲</div>
+                <div class="die" id="die2">🔥</div>
+            </div>
+
+            <!-- Action Card -->
+            <div id="actionCard" class="card-container">
+                <div class="card action">
+                    <div class="card-label">⚡ Aktion</div>
+                    <div class="card-text" id="actionText"></div>
+                    <div class="card-sub" id="actionSub"></div>
+                </div>
+            </div>
+
+            <!-- Quiz Card -->
+            <div id="quizCard" class="card-container">
+                <div class="card quiz">
+                    <div class="card-label">🧠 Quizduell</div>
+                    <div class="card-text" id="quizText" style="font-size: 18px;"></div>
+                    <div class="quiz-options" id="quizOptions"></div>
+                    <div class="quiz-answer-reveal" id="quizReveal"></div>
+                </div>
+            </div>
+
+            <!-- Tabu Card -->
+            <div id="tabuCard" class="card-container">
+                <div class="card tabu">
+                    <div class="card-label">🚫 Tabu</div>
+                    <div class="card-text">Erkläre dieses Wort ohne die verbotenen Begriffe zu nutzen:</div>
+                    <div class="tabu-word" id="tabuWord"></div>
+                    <div class="tabu-list" id="tabuList"></div>
+                    <div class="card-sub" style="margin-top: 20px;">30 Sekunden Zeit!</div>
+                </div>
+            </div>
+
+            <!-- Zündstoff Card -->
+            <div id="zündstoffCard" class="card-container">
+                <div class="card zündstoff">
+                    <div class="card-label">🔥 Zündstoff</div>
+                    <div class="card-text" id="zündstoffText"></div>
+                    <div class="card-sub">Ehrlich antworten oder Strip!</div>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="gameActions" class="footer-actions hidden">
+            <button class="btn" onclick="actionFail()" style="color: var(--danger); border-color: rgba(255,45,85,0.3)">Strip 👙</button>
+            <button class="btn btn-gold" onclick="actionSuccess()">Geschafft ✓</button>
+        </div>
+
+        <div id="nextActions" class="footer-actions hidden">
+            <button class="btn btn-gold" onclick="nextTurn()">Weiter →</button>
+        </div>
+    </div>
+
+    <script>
+        // GAME DATA - Massive Catalogs
+        const gameData = {
+            actions: [
+                { text: "Tausche dein Oberteil mit der Person links von dir.", intensity: 3 },
+                { text: "Lass dich 30 Sekunden lang von der Person rechts kitzeln.", intensity: 2 },
+                { text: "Flüstere der Person deiner Wahl ein schmutziges Geheimnis ins Ohr.", intensity: 4 },
+                { text: "Trinke einen Schluck vom Getränk deines Gegenübers ohne Hände.", intensity: 3 },
+                { text: "Mache der Person gegenüber ein extrem übertriebenes anzügliches Kompliment.", intensity: 2 },
+                { text: "Ziehe ein Kleidungsstück deiner Wahl aus.", intensity: 5 },
+                { text: "Die Gruppe darf entscheiden: Wahrheit oder Strip?", intensity: 4 },
+                { text: "Simuliere eine sexy Werbung für ein beliebiges Objekt im Raum.", intensity: 3 },
+                { text: "Massiere die Schultern der Person neben dir für eine Runde.", intensity: 2 },
+                { text: "Spiele eine Szene aus deinem Lieblingsporno nach (stumm).", intensity: 5 },
+                { text: "Lass dir die Augen verbinden und errate, wer dich berührt.", intensity: 3 },
+                { text: "Tausche den Sitzplatz mit der Person, die dir am meisten gefällt.", intensity: 2 },
+                { text: "Zeige der Gruppe dein bestes Dirty Talk-Gesicht.", intensity: 3 },
+                { text: "Iss einen Eiswürfel aus dem Dekolleté/einem Sixpack der Person links.", intensity: 4 },
+                { text: "Die Gruppe darf dein Profilbild bei Instagram kommentieren.", intensity: 2 },
+                { text: "Mache 10 Kniebeugen auf dem Schoß der Person rechts.", intensity: 3 },
+                { text: "Erzähle deine peinlichste Sex-Geschichte.", intensity: 4 },
+                { text: "Gib der Person gegenüber einen Kuss auf die Wange oder den Mund.", intensity: 3 },
+                { text: "Lecke etwas Schokolade/Sahne vom Bauch einer anderen Person.", intensity: 5 },
+                { text: "Spiele 'Ich habe noch nie' - die Gruppe stellt 3 Runden.", intensity: 3 },
+                { text: "Mache einen Striptease zu einem Song der Gruppenwahl.", intensity: 5 },
+                { text: "Tausche alle Kleidungsstücke mit der Person gegenüber (außer Unterwäsche).", intensity: 4 },
+                { text: "Lass dich von der Gruppe in eine verführerische Pose bringen.", intensity: 3 },
+                { text: "Benutze einen Gegenstand als Mikrofon und singe ein Liebeslied.", intensity: 2 },
+                { text: "Führe einen langsamen Body-Scan der Person links vor.", intensity: 4 }
+            ],
+            
+            quiz: [
+                { q: "Wie viele Schritte macht ein Mensch im Durchschnitt pro Tag?", options: ["3.000", "10.000", "15.000"], correct: 1, info: "Ca. 10.000 Schritte sind der Durchschnitt" },
+                { q: "Welches ist das größte innere Organ des Menschen?", options: ["Herz", "Leber", "Lunge"], correct: 1, info: "Die Leber wiegt ca. 1,5kg" },
+                { q: "Wie viele Zähne hat ein Erwachsener normalerweise?", options: ["28", "32", "36"], correct: 1, info: "32 Zähne inkl. Weisheitszähne" },
+                { q: "In welchem Jahr kam der erste iPhone heraus?", options: ["2005", "2007", "2009"], correct: 1, info: "Steve Jobs präsentierte es 2007" },
+                { q: "Wie heißt die Hauptstadt von Australien?", options: ["Sydney", "Melbourne", "Canberra"], correct: 2, info: "Canberra ist die Hauptstadt" },
+                { q: "Wie viele Planeten hat unser Sonnensystem?", options: ["7", "8", "9"], correct: 1, info: "Seit 2006 nur noch 8 Planeten" },
+                { q: "Welches chemische Element hat das Symbol 'Au'?", options: ["Silber", "Aluminium", "Gold"], correct: 2, info: "Au kommt von lateinisch 'aurum'" },
+                { q: "Wie viele Oscars gewann 'Titanic'?", options: ["9", "11", "13"], correct: 1, info: "11 Oscars, genau wie Ben Hur" },
+                { q: "Wer malte die Mona Lisa?", options: ["Michelangelo", "Leonardo da Vinci", "Raphael"], correct: 1, info: "Da Vinci malte sie 1503-1519" },
+                { q: "Wie viele Sterne hat die EU-Flagge?", options: ["10", "12", "15"], correct: 1, info: "12 Sterne für Vollkommenheit" },
+                { q: "Welcher Planet ist der Sonne am nächsten?", options: ["Venus", "Merkur", "Mars"], correct: 1, info: "Merkur ist der innerste Planet" },
+                { q: "Wie viele Bundesländer hat Deutschland?", options: ["14", "15", "16"], correct: 2, info: "16 Bundesländer seit der Wiedervereinigung" },
+                { q: "Welches ist das schnellste Landsäugetier?", options: ["Gepard", "Löwe", "Gazelle"], correct: 0, info: "Geparden erreichen 110 km/h" },
+                { q: "Wie viele Knochen hat ein Erwachsener?", options: ["206", "208", "210"], correct: 0, info: "Ein Baby hat übrigens 270 Knochen" },
+                { q: "In welchem Jahr endete der Zweite Weltkrieg?", options: ["1944", "1945", "1946"], correct: 1, info: "Die Kapitulation war im Mai 1945" },
+                { q: "Welches ist das größte Säugetier der Welt?", options: ["Elefant", "Blauwal", "Giraffe"], correct: 1, info: "Blaue Wale werden 30m lang" },
+                { q: "Wie viele Farben hat ein Regenbogen?", options: ["5", "6", "7"], correct: 2, info: "Rot, Orange, Gelb, Grün, Blau, Indigo, Violett" },
+                { q: "Welches Land ist flächenmäßig das größte?", options: ["China", "USA", "Russland"], correct: 2, info: "Russland ist 17 Millionen km² groß" },
+                { q: "Wie viele Herzen hat ein Oktopus?", options: ["1", "2", "3"], correct: 2, info: "Zwei für die Kiemen, eines für den Körper" },
+                { q: "Welches Element ist H2O?", options: ["Wasserstoff", "Sauerstoff", "Wasser"], correct: 2, info: "H2O ist die chemische Formel für Wasser" }
+            ],
+
+            tabu: [
+                { word: "Orgasmus", forbidden: ["Höhepunkt", "Sex", "Lust", "Kommen", "Genuss"] },
+                { word: "Kondom", forbidden: ["Gummi", "Schutz", "Sex", "Verhütung", "Tüte"] },
+                { word: "Tinder", forbidden: ["Dating", "App", "Swipe", "Match", "Date"] },
+                { word: "Viagra", forbidden: ["Potenz", "Pille", "Mann", "Stehen", "Medizin"] },
+                { word: "Kamasutra", forbidden: ["Sex", "Stellung", "Buch", "Indien", "Liebe"] },
+                { word: "Striptease", forbidden: ["Ausziehen", "Tanz", "Kleidung", "Club", "Sexy"] },
+                { word: "One-Night-Stand", forbidden: ["Sex", "Nacht", "Fremder", "Beziehung", "ONS"] },
+                { word: "Aphrodisiakum", forbidden: ["Lust", "Mittel", "Sex", "Essen", "Anregung"] },
+                { word: "Lederpeitsche", forbidden: ["Schlagen", "Sex", "SM", "Dominant", "Haut"] },
+                { word: "Schwarzes Loch", forbidden: ["Weltall", "Stern", "Verschwinden", "Gravitation", "Universum"] },
+                { word: "Bitcoin", forbidden: ["Geld", "Krypto", "Digital", "Münze", "Investieren"] },
+                { word: "Karaoke", forbidden: ["Singen", "Mikrofon", "Musik", "Lied", "Bühne"] },
+                { word: "Tequila", forbidden: ["Schnaps", "Mexiko", "Salz", "Zitrone", "Trinken"] },
+                { word: "Kuscheln", forbidden: ["Liebe", "Bett", "Umarmung", "Zärtlich", "Körper"] },
+                { word: "Selbstbräuner", forbidden: ["Haut", "Braun", "Creme", "Sommer", "Gesicht"] },
+                { word: "Speed-Dating", forbidden: ["Date", "Kennenlernen", "Zeit", "Tisch", "Single"] },
+                { word: "Nacktbaden", forbidden: ["See", "Ohne", "Kleidung", "FKK", "Wasser"] },
+                { word: "Küssen", forbidden: ["Lippen", "Mund", "Zunge", "Liebe", "Knutschen"] },
+                { word: "Handschellen", forbidden: ["Polizei", "Fest", "Metall", "Schloss", "Gefangen"] },
+                { word: "Dessous", forbidden: ["Unterwäsche", "Sexy", "Spitze", "Frau", "Tragen"] }
+            ],
+
+            zündstoff: [
+                "Was ist deine geheimste sexuelle Fantasie?",
+                "Mit wem aus dieser Runde würdest du am ehesten schlafen?",
+                "Was ist das Verruchteste, das du je gemacht hast?",
+                "Hast du schon mal jemanden in dieser Runde nackt gesehen?",
+                "Was war dein letzter Sex-Traum?",
+                "Welche Körperstelle machht dich am meisten an?",
+                "Hast du schon mal bei der Arbeit/Schule Sex gehabt?",
+                "Was ist deine Lieblingsstellung?",
+                "Mit wie vielen Personen hattest du bisher Sex?",
+                "Hast du schon mal ein Video von dir gemacht?",
+                "Was ist das Peinlichste, das dir beim Sex passiert ist?",
+                "Bevorzugst du dominant oder devot?",
+                "Was ist dein größter Abturn?",
+                "Hast du schon mal jemanden betrogen?",
+                "Wann hattest du das letzte Mal Sex?",
+                "Was ist deine geheime Schwäche?",
+                "Hast du schon mal mit mehreren Personen gleichzeitig?",
+                "Welches Spielzeug besitzt du?",
+                "Was würdest du niemals im Bett machen?",
+                "Wer hat die schönsten Augen in dieser Runde?",
+                "Hast du schon mal Gefühle für einen Ex gehabt während du in einer Beziehung warst?",
+                "Was ist das Versauteste, das du je gesagt hast?",
+                "Bevorzugst es bei Licht oder im Dunkeln?",
+                "Was würdest du mit einer Person dieser Runde tun, wenn du eine Stunde lang unsichtbar wärst?"
+            ]
+        };
+
+        // Game State
+        let players = [];
+        let currentIdx = 0;
+        let usedContent = new Set(); // Anti-Doubletten System
+        let currentMode = '';
+        let currentQuizAnswer = null;
+
+        // Helper: Get random unused item
+        function getUnusedItem(array, prefix) {
+            const available = array.filter((_, idx) => !usedContent.has(prefix + idx));
+            if(available.length === 0) {
+                // Reset if all used
+                usedContent.clear();
+                return { item: array[Math.floor(Math.random() * array.length)], index: Math.floor(Math.random() * array.length) };
+            }
+            const randomIdx = Math.floor(Math.random() * available.length);
+            const originalIndex = array.indexOf(available[randomIdx]);
+            usedContent.add(prefix + originalIndex);
+            return { item: available[randomIdx], index: originalIndex };
+        }
+
+        // Navigation
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function showRules() {
+            alert(`FUNKENFLUG Regeln:
+
+🎲 Würfeln startet die Runde
+🎯 Vier Modi werden zufällig ausgewählt:
+   • Aktion: Aufgaben erfüllen
+   • Quiz: Richtig antworten  
+   • Tabu: Wort erklären ohne Tabubegriffe
+   • Zündstoff: Intime Fragen ehrlich beantworten
+
+✅ Geschafft = Nächster Spieler
+❌ Strip = Kleidungsstück ausziehen (bei 0: Sonderaufgabe oder Ausscheiden)
+
+Keine Wiederholungen in einer Session!`);
+        }
+
+        // Setup
+        function addPlayer() {
+            const list = document.getElementById('playerList');
+            if(list.children.length >= 8) return;
+            const div = document.createElement('div');
+            div.className = 'player-input';
+            div.innerHTML = `
+                <input type="text" placeholder="Name..." oninput="checkStart()">
+                <button class="remove-player" onclick="this.parentElement.remove(); checkStart()">×</button>
+            `;
+            list.appendChild(div);
+            checkStart();
+        }
+
+        function checkStart() {
+            const inputs = document.querySelectorAll('.player-input input');
+            const valid = Array.from(inputs).filter(i => i.value.trim().length > 0);
+            document.getElementById('startBtn').disabled = valid.length < 2;
+        }
+
+        function startGame() {
+            const inputs = document.querySelectorAll('.player-input input');
+            players = Array.from(inputs)
+                .map(i => i.value.trim())
+                .filter(name => name !== "")
+                .map(name => ({ name: name, clothes: 5 }));
+            
+            currentIdx = 0;
+            usedContent.clear();
+            updateUI();
+            showScreen('gameScreen');
+        }
+
+        function updateUI() {
+            const p = players[currentIdx];
+            document.getElementById('currentPlayer').innerText = p.name;
+            document.getElementById('clothesDisplay').innerText = "👕".repeat(p.clothes) + "❌".repeat(5-p.clothes);
+            document.getElementById('progressBar').style.width = ((usedContent.size / 80) * 100) + "%";
+        }
+
+        // Game Logic
+        function roll() {
+            const d1 = document.getElementById('die1');
+            const d2 = document.getElementById('die2');
+            
+            // Animation
+            d1.classList.add('rolling');
+            d2.classList.add('rolling');
+            document.getElementById('diceView').style.pointerEvents = 'none';
+
+            setTimeout(() => {
+                d1.classList.remove('rolling');
+                d2.classList.remove('rolling');
+                
+                // Random Mode: 40% Action, 25% Quiz, 20% Tabu, 15% Zündstoff
+                const rand = Math.random();
+                if(rand < 0.4) showAction();
+                else if(rand < 0.65) showQuiz();
+                else if(rand < 0.85) showTabu();
+                else showZündstoff();
+                
+            }, 600);
+        }
+
+        function hideAllCards() {
+            document.querySelectorAll('.card-container').forEach(c => c.classList.remove('active'));
+            document.getElementById('diceView').classList.add('hidden');
+            document.getElementById('modeIndicator').style.display = 'block';
+            document.getElementById('gameActions').classList.remove('hidden');
+            document.getElementById('nextActions').classList.add('hidden');
+        }
+
+        function showAction() {
+            currentMode = 'action';
+            hideAllCards();
+            document.getElementById('modeIndicator').className = 'mode-indicator action';
+            document.getElementById('modeIndicator').innerText = 'Action';
+            
+            const { item } = getUnusedItem(gameData.actions, 'a');
+            document.getElementById('actionText').innerText = item.text;
+            document.getElementById('actionSub').innerText = "Intensität: " + "🔥".repeat(item.intensity);
+            document.getElementById('actionCard').classList.add('active');
+        }
+
+        function showQuiz() {
+            currentMode = 'quiz';
+            hideAllCards();
+            document.getElementById('modeIndicator').className = 'mode-indicator quiz';
+            document.getElementById('modeIndicator').innerText = 'Quiz';
+            document.getElementById('gameActions').classList.add('hidden');
+            document.getElementById('nextActions').classList.remove('hidden');
+            
+            const { item } = getUnusedItem(gameData.quiz, 'q');
+            document.getElementById('quizText').innerText = item.q;
+            document.getElementById('quizReveal').style.display = 'none';
+            
+            const optsDiv = document.getElementById('quizOptions');
+            optsDiv.innerHTML = '';
+            
+            item.options.forEach((opt, idx) => {
+                const btn = document.createElement('div');
+                btn.className = 'quiz-option';
+                btn.innerText = opt;
+                btn.onclick = function() {
+                    document.querySelectorAll('.quiz-option').forEach(b => {
+                        b.style.pointerEvents = 'none';
+                        if(b.innerText === item.options[item.correct]) b.classList.add('correct');
+                    });
+                    if(idx !== item.correct) {
+                        this.classList.add('wrong');
+                        document.getElementById('quizReveal').innerHTML = `<strong>Falsch!</strong><br>${item.info}`;
+                        document.getElementById('quizReveal').style.display = 'block';
+                        // Force strip for wrong answer
+                        setTimeout(() => actionFail(), 2000);
+                    } else {
+                        setTimeout(() => nextTurn(), 1500);
+                    }
+                };
+                optsDiv.appendChild(btn);
+            });
+            
+            document.getElementById('quizCard').classList.add('active');
+        }
+
+        function showTabu() {
+            currentMode = 'tabu';
+            hideAllCards();
+            document.getElementById('modeIndicator').className = 'mode-indicator tabu';
+            document.getElementById('modeIndicator').innerText = 'Tabu';
+            
+            const { item } = getUnusedItem(gameData.tabu, 't');
+            document.getElementById('tabuWord').innerText = item.word;
+            
+            const list = document.getElementById('tabuList');
+            list.innerHTML = '';
+            item.forbidden.forEach(f => {
+                const span = document.createElement('span');
+                span.className = 'tabu-item';
+                span.innerText = "❌ " + f;
+                list.appendChild(span);
+            });
+            
+            document.getElementById('tabuCard').classList.add('active');
+        }
+
+        function showZündstoff() {
+            currentMode = 'zündstoff';
+            hideAllCards();
+            document.getElementById('modeIndicator').className = 'mode-indicator zündstoff';
+            document.getElementById('modeIndicator').innerText = 'Zündstoff';
+            
+            const { item } = getUnusedItem(gameData.zündstoff, 'z');
+            document.getElementById('zündstoffText').innerText = item;
+            document.getElementById('zündstoffCard').classList.add('active');
+        }
+
+        function actionSuccess() {
+            nextTurn();
+        }
+
+        function actionFail() {
+            players[currentIdx].clothes--;
+            if(players[currentIdx].clothes <= 0) {
+                alert(players[currentIdx].name + " ist nackt! 😈\nSonderaufgabe: Einen Shot trinken oder ausscheiden!");
+                players[currentIdx].clothes = 1; // Mercy rule
+            }
+            updateUI();
+            nextTurn();
+        }
+
+        function nextTurn() {
+            currentIdx = (currentIdx + 1) % players.length;
+            updateUI();
+            
+            document.getElementById('diceView').classList.remove('hidden');
+            document.querySelectorAll('.card-container').forEach(c => c.classList.remove('active'));
+            document.getElementById('gameActions').classList.add('hidden');
+            document.getElementById('nextActions').classList.add('hidden');
+            document.getElementById('modeIndicator').style.display = 'none';
+            document.getElementById('diceView').style.pointerEvents = 'auto';
+        }
+
+        // Initialize
+        addPlayer();
+        addPlayer();
+    </script>
+</body>
+</html>
