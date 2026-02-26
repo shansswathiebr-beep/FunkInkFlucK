@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>FUNKENFLUG</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --gold: #d4a574;
+            --accent: #e8b4b8;
+            --danger: #ff2d55;
+            --bg: #000;
+        }
+
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Screens */
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            padding: 20px;
+            padding-top: env(safe-area-inset-top, 20px);
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        .screen.active { display: flex; }
+
+        /* Start Screen Styling */
+        #startScreen {
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+        }
+
+        .logo {
+            font-size: 12vw;
+            font-weight: 200;
+            letter-spacing: 0.2em;
+            background: linear-gradient(to right, var(--gold), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 8vh;
+        }
+
+        /* Buttons & Inputs */
+        .btn {
+            width: 100%;
+            max-width: 280px;
+            padding: 16px;
+            margin: 8px 0;
+            border-radius: 50px;
+            border: 1px solid rgba(212, 165, 116, 0.4);
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .btn-gold {
+            background: var(--gold);
+            color: #000;
+            font-weight: bold;
+            border: none;
+        }
+
+        .btn:active { transform: scale(0.96); opacity: 0.8; }
+
+        /* Setup - Scrollable Bereich */
+        .player-list {
+            flex: 1;
+            overflow-y: auto;
+            margin: 20px 0;
+            padding-right: 5px;
+        }
+
+        .player-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } }
+
+        .player-input input {
+            flex: 1;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        /* Game Header */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #222;
+        }
+
+        .clothes-count { font-size: 20px; }
+
+        /* Dice & Cards */
+        .game-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .die {
+            width: 100px;
+            height: 100px;
+            background: #111;
+            border: 2px solid var(--gold);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 10px;
+            box-shadow: 0 0 20px rgba(212, 165, 116, 0.2);
+        }
+
+        .die.rolling { animation: shake 0.4s infinite; }
+
+        @keyframes shake {
+            0% { transform: translate(2px, 1px) rotate(0deg); }
+            20% { transform: translate(-1px, -2px) rotate(-2deg); }
+            40% { transform: translate(-3px, 0px) rotate(3deg); }
+            100% { transform: translate(1px, -1px) rotate(0deg); }
+        }
+
+        .card {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 25px;
+            padding: 30px;
+            text-align: center;
+            width: 100%;
+            max-width: 340px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+
+        .watermark {
+            position: fixed;
+            bottom: 5px;
+            width: 100%;
+            text-align: center;
+            font-size: 9px;
+            color: rgba(212,165,116,0.2);
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="watermark">© 2026 Hans-Swathi Srikandaraja • 27804 Berne</div>
+
+    <div id="startScreen" class="screen active">
+        <div class="logo">FUNKEN<br>FLUG</div>
+        <button class="btn btn-gold" onclick="showScreen('setupScreen')">Spiel starten</button>
+        <button class="btn" onclick="alert('Würfel, erfülle Aufgaben oder zieh dich aus. Wer zuerst nackt ist, hat... verloren?')">Regeln</button>
+    </div>
+
+    <div id="setupScreen" class="screen">
+        <h2 style="color: var(--gold)">Wer spielt mit?</h2>
+        <div class="player-list" id="playerList"></div>
+        <button class="btn" onclick="addPlayer()" style="border-style: dashed">+ Spieler</button>
+        <button class="btn btn-gold" id="startBtn" onclick="startGame()" disabled>Let's go</button>
+    </div>
+
+    <div id="gameScreen" class="screen">
+        <div class="game-header">
+            <div id="currentPlayer" style="font-weight: bold; color: var(--gold)">Name</div>
+            <div class="clothes-count" id="clothesDisplay">👕👕👕</div>
+        </div>
+
+        <div class="game-content" id="gameContent">
+            <div id="diceWrapper" style="display: flex" onclick="roll()">
+                <div class="die" id="die1">🎲</div>
+                <div class="die" id="die2">🔥</div>
+            </div>
+            <div id="challengeBox" class="hidden"></div>
+        </div>
+
+        <div id="actionBar" class="hidden" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%">
+            <button class="btn" onclick="actionFail()" style="color: var(--danger)">Strip</button>
+            <button class="btn btn-gold" onclick="actionSuccess()">Erledigt</button>
+        </div>
+    </div>
+
+    <script>
+        const challenges = [
+            { text: "Tausche ein Kleidungsstück mit der Person links.", intensity: 2 },
+            { text: "Flüstere der Person rechts ein schmutziges Geheimnis.", intensity: 4 },
+            { text: "Trinke einen Schluck vom Getränk deines Gegenübers ohne Hände.", intensity: 3 },
+            { text: "Lass dir von der Gruppe ein neues Tabu-Wort geben. Benutzt du es: Strip.", intensity: 5 },
+            { text: "Zeig uns dein letztes gespeichertes Foto. Peinlich? Dann Strip.", intensity: 3 }
+        ];
+
+        let players = [], currentIdx = 0;
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function addPlayer() {
+            const list = document.getElementById('playerList');
+            const div = document.createElement('div');
+            div.className = 'player-input';
+            div.innerHTML = `<input type="text" placeholder="Name..." oninput="checkStart()">`;
+            list.appendChild(div);
+            checkStart();
+        }
+
+        function checkStart() {
+            const inputs = document.querySelectorAll('.player-input input');
+            document.getElementById('startBtn').disabled = Array.from(inputs).filter(i => i.value.trim()).length < 2;
+        }
+
+        function startGame() {
+            const inputs = document.querySelectorAll('.player-input input');
+            players = Array.from(inputs).map(i => ({ name: i.value || 'Gast', clothes: 5 }));
+            updateUI();
+            showScreen('gameScreen');
+        }
+
+        function updateUI() {
+            const p = players[currentIdx];
+            document.getElementById('currentPlayer').innerText = p.name;
+            document.getElementById('clothesDisplay').innerText = "👕".repeat(p.clothes);
+        }
+
+        function roll() {
+            const d1 = document.getElementById('die1');
+            const d2 = document.getElementById('die2');
+            d1.classList.add('rolling');
+            d2.classList.add('rolling');
+
+            setTimeout(() => {
+                d1.classList.remove('rolling');
+                d2.classList.remove('rolling');
+                showChallenge();
+            }, 600);
+        }
+
+        function showChallenge() {
+            const c = challenges[Math.floor(Math.random() * challenges.length)];
+            document.getElementById('diceWrapper').classList.add('hidden');
+            document.getElementById('challengeBox').classList.remove('hidden');
+            document.getElementById('actionBar').classList.remove('hidden');
+            
+            document.getElementById('challengeBox').innerHTML = `
+                <div class="card">
+                    <div style="font-size: 12px; color: var(--gold); margin-bottom: 10px">AUFGABE</div>
+                    <div style="font-size: 1.2rem; line-height: 1.5">${c.text}</div>
+                </div>
+            `;
+        }
+
+        function actionSuccess() { nextTurn(); }
+        function actionFail() {
+            players[currentIdx].clothes--;
+            if(players[currentIdx].clothes <= 0) alert(players[currentIdx].name + " ist hüllenlos!");
+            nextTurn();
+        }
+
+        function nextTurn() {
+            currentIdx = (currentIdx + 1) % players.length;
+            document.getElementById('diceWrapper').classList.remove('hidden');
+            document.getElementById('challengeBox').classList.add('hidden');
+            document.getElementById('actionBar').classList.add('hidden');
+            updateUI();
+        }
+
+        // Initialisierung
+        addPlayer(); addPlayer();
+    </script>
+</body>
+</html>
