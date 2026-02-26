@@ -1,0 +1,2380 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>FUNKENFLUG v3.0 - High Stakes</title>
+    
+    <style>
+        :root {
+            --bg-primary: #000000;
+            --bg-secondary: #0a0a0a;
+            --bg-glass: rgba(20, 20, 20, 0.95);
+            --gold: #d4af37;
+            --gold-light: #f4d03f;
+            --gold-dark: #b8960c;
+            --danger: #ff3333;
+            --success: #00c853;
+            --accent: #2979ff;
+            --text: #ffffff;
+            --text-secondary: #888888;
+            --border: rgba(212, 175, 55, 0.3);
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Helvetica Neue', system-ui, -apple-system, sans-serif;
+            user-select: none;
+        }
+
+        html, body { 
+            height: 100%; 
+            background: var(--bg-primary); 
+            color: var(--text); 
+            overflow: hidden; 
+            position: fixed; 
+            width: 100%;
+        }
+
+        .app { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%; 
+            position: relative;
+            background: radial-gradient(ellipse at top, #1a1a1a 0%, #000000 70%);
+        }
+
+        .header { 
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            padding: 0 20px; 
+            padding-top: env(safe-area-inset-top, 10px);
+            z-index: 100;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .header > * { pointer-events: auto; }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 300;
+            letter-spacing: 6px;
+            color: var(--gold);
+            text-transform: uppercase;
+        }
+
+        .lang-indicator {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--text);
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        .lang-indicator:hover {
+            background: rgba(212, 175, 55, 0.2);
+            border-color: var(--gold);
+        }
+
+        .pot-indicator {
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--gold);
+            display: none;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+            font-weight: 600;
+        }
+
+        .pot-indicator.active { display: flex; animation: pulse 2s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
+        }
+
+        .content { 
+            flex: 1; 
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--bg-primary);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .overlay.active { display: flex; opacity: 1; }
+
+        /* OPTIMIERTE SPRACHAUSWAHL */
+        .lang-container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding-top: 80px;
+            padding-bottom: 100px;
+        }
+
+        .lang-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .lang-title {
+            font-size: 14px;
+            color: var(--text-secondary);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .lang-subtitle {
+            font-size: 28px;
+            font-weight: 300;
+            color: var(--gold);
+            letter-spacing: 2px;
+        }
+
+        .lang-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            flex: 1;
+            padding: 0 10px;
+        }
+
+        .lang-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .lang-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--gold);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .lang-item:hover {
+            background: rgba(255,255,255,0.06);
+            transform: translateX(4px);
+        }
+
+        .lang-item.active {
+            background: rgba(212, 175, 55, 0.12);
+            border-color: rgba(212, 175, 55, 0.4);
+        }
+
+        .lang-item.active::before {
+            opacity: 1;
+        }
+
+        .lang-flag {
+            font-size: 32px;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+        }
+
+        .lang-info {
+            flex: 1;
+        }
+
+        .lang-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .lang-native {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .lang-check {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .lang-item.active .lang-check {
+            opacity: 1;
+            background: var(--gold);
+            border-color: var(--gold);
+            color: #000;
+        }
+
+        .lang-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+            background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 50%, transparent 100%);
+            display: flex;
+            justify-content: center;
+        }
+
+        .glass-card {
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 32px;
+            width: 100%;
+            max-width: 400px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+        }
+
+        .player-queue {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 50;
+            transition: transform 0.3s ease, opacity 0.3s;
+            max-width: 90%;
+            overflow-x: auto;
+            padding: 10px;
+        }
+
+        .player-queue.hidden {
+            transform: translateX(-50%) translateY(100px);
+            opacity: 0;
+        }
+
+        .player-chip {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            transition: all 0.3s;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .player-chip.active {
+            background: var(--gold);
+            color: #000;
+            border-color: var(--gold);
+            transform: scale(1.1);
+            font-weight: 600;
+        }
+
+        .player-chip.out {
+            opacity: 0.2;
+            text-decoration: line-through;
+        }
+
+        .game-card {
+            background: linear-gradient(135deg, rgba(20,20,20,0.95) 0%, rgba(10,10,10,0.98) 100%);
+            border: 1px solid var(--border);
+            border-radius: 32px;
+            padding: 40px 30px;
+            width: 90%;
+            max-width: 380px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            display: none;
+            box-shadow: 0 0 60px rgba(212, 175, 55, 0.1);
+        }
+
+        .game-card.active {
+            display: block;
+            animation: cardEnter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes cardEnter {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .card-glow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        .card-type {
+            font-size: 11px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 24px;
+            font-weight: 600;
+        }
+
+        .card-content {
+            font-size: 24px;
+            line-height: 1.4;
+            font-weight: 300;
+            margin-bottom: 30px;
+            color: var(--text);
+        }
+
+        .forbidden-words {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .forbidden-word {
+            background: rgba(255, 51, 51, 0.1);
+            color: var(--danger);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            border: 1px solid rgba(255, 51, 51, 0.3);
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            border: none;
+            background: rgba(255,255,255,0.05);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:active { transform: scale(0.96); }
+
+        .btn-gold {
+            background: var(--gold);
+            color: #000;
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+        }
+
+        .btn-danger {
+            background: rgba(255, 51, 51, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(255, 51, 51, 0.3);
+        }
+
+        .btn-success {
+            background: rgba(0, 200, 83, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(0, 200, 83, 0.3);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn-group .btn { flex: 1; }
+
+        .fab-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 40;
+        }
+
+        .fab-container.active { display: flex; }
+
+        .dice-container {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+        }
+
+        .dice {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .dice:active { transform: scale(0.9); }
+
+        .dice.rolling { animation: rollDice 0.5s infinite; }
+
+        @keyframes rollDice {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal.active { display: flex; }
+
+        .bet-interface {
+            background: var(--bg-glass);
+            border: 1px solid var(--gold);
+            border-radius: 24px;
+            padding: 24px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .bet-title {
+            font-size: 20px;
+            color: var(--gold);
+            text-align: center;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .bet-input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            color: var(--text);
+            font-size: 16px;
+            margin-bottom: 16px;
+            outline: none;
+        }
+
+        .bet-input:focus { border-color: var(--gold); }
+
+        .bet-info {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .bj-table {
+            background: rgba(0,50,0,0.3);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(0,200,83,0.3);
+        }
+
+        .bj-hand {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+            min-height: 80px;
+            flex-wrap: wrap;
+        }
+
+        .bj-card {
+            width: 50px;
+            height: 75px;
+            background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: #000;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            flex-shrink: 0;
+        }
+
+        .bj-card.red { color: var(--danger); }
+
+        .bj-card.hidden {
+            background: linear-gradient(135deg, #b91c1c, #7f1d1d);
+            color: transparent;
+        }
+
+        .start-screen { text-align: center; }
+
+        .main-title {
+            font-size: 48px;
+            font-weight: 100;
+            letter-spacing: 12px;
+            color: var(--gold);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            letter-spacing: 6px;
+            color: var(--text-secondary);
+            margin-bottom: 60px;
+            text-transform: uppercase;
+        }
+
+        .feature-tags {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 11px;
+            color: var(--gold);
+            letter-spacing: 1px;
+        }
+
+        .hidden { display: none !important; }
+        
+        .fade-in { animation: fadeIn 0.5s ease; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @media (max-height: 700px) {
+            .main-title { font-size: 36px; }
+            .card-content { font-size: 20px; }
+            .dice { width: 80px; height: 80px; font-size: 36px; }
+            .lang-item { padding: 16px; }
+        }
+
+        @media (max-width: 380px) {
+            .lang-flag { font-size: 24px; width: 40px; height: 40px; }
+            .lang-name { font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app">
+        <div class="header">
+            <div class="logo">FUNKENFLUG</div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="lang-indicator" onclick="game.showLanguageSelect()" id="currentLangDisplay">
+                    <span id="currentFlag">🇩🇪</span>
+                    <span id="currentCode">DE</span>
+                </div>
+                <div class="pot-indicator" id="potIndicator">
+                    <span>🎰</span>
+                    <span id="potText">POT</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            
+            <!-- OPTIMIERTE SPRACHAUSWAHL -->
+            <div id="overlay-lang" class="overlay active">
+                <div class="lang-container">
+                    <div class="lang-header">
+                        <div class="lang-title" data-i18n="selectLanguage">SPRACHE WÄHLEN</div>
+                        <div class="lang-subtitle">FUNKENFLUG</div>
+                    </div>
+                    
+                    <div class="lang-list">
+                        <div class="lang-item active" onclick="game.setLanguage('de')" data-lang="de">
+                            <div class="lang-flag">🇩🇪</div>
+                            <div class="lang-info">
+                                <div class="lang-name">DEUTSCH</div>
+                                <div class="lang-native">German</div>
+                            </div>
+                            <div class="lang-check">✓</div>
+                        </div>
+
+                        <div class="lang-item" onclick="game.setLanguage('en')" data-lang="en">
+                            <div class="lang-flag">🇬🇧</div>
+                            <div class="lang-info">
+                                <div class="lang-name">ENGLISH</div>
+                                <div class="lang-native">English</div>
+                            </div>
+                            <div class="lang-check">✓</div>
+                        </div>
+
+                        <div class="lang-item" onclick="game.setLanguage('es')" data-lang="es">
+                            <div class="lang-flag">🇪🇸</div>
+                            <div class="lang-info">
+                                <div class="lang-name">ESPAÑOL</div>
+                                <div class="lang-native">Spanish</div>
+                            </div>
+                            <div class="lang-check">✓</div>
+                        </div>
+
+                        <div class="lang-item" onclick="game.setLanguage('fr')" data-lang="fr">
+                            <div class="lang-flag">🇫🇷</div>
+                            <div class="lang-info">
+                                <div class="lang-name">FRANÇAIS</div>
+                                <div class="lang-native">French</div>
+                            </div>
+                            <div class="lang-check">✓</div>
+                        </div>
+
+                        <div class="lang-item" onclick="game.setLanguage('it')" data-lang="it">
+                            <div class="lang-flag">🇮🇹</div>
+                            <div class="lang-info">
+                                <div class="lang-name">ITALIANO</div>
+                                <div class="lang-native">Italian</div>
+                            </div>
+                            <div class="lang-check">✓</div>
+                        </div>
+
+                        <div class="lang-item" onclick="game.setLanguage('pt')" data-lang="pt">
+                            <div class="lang-flag">🇵🇹</div>
+                            <div class="lang-info">
+                                <div class="lang-name">PORTUGUÊS</div>
+                                <div class="lang-native">Portuguese</div>
+                            </div>
+                            <div class="lang-check">✓</div>
+                        </div>
+
+                        <div class="lang-item" onclick="game.setLanguage('nl')" data-lang="nl">
+                            <div class="lang-flag">🇳🇱</div>
+                            <div class="lang-info">
+                                <div class="lang-name">NEDERLANDS</div>
+                                <div class="lang-native">Dutch</div>
+                            </div>
+                            <div class="lang-check">✓</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="lang-footer">
+                    <button class="btn btn-gold" onclick="game.confirmLanguage()" style="max-width: 300px;" data-i18n="continue">Weiter</button>
+                </div>
+            </div>
+
+            <!-- START SCREEN -->
+            <div id="overlay-start" class="overlay start-screen">
+                <div class="main-title">FUNKEN<br>FLUG</div>
+                <div class="subtitle" data-i18n="highStakesEdition">High Stakes Edition</div>
+                
+                <div class="feature-tags">
+                    <span class="tag">⚡ <span data-i18n="fourModes">4 Modi</span></span>
+                    <span class="tag">🎲 <span data-i18n="twentyOne">21</span></span>
+                    <span class="tag">🔥 <span data-i18n="riskX2">Risiko x2</span></span>
+                </div>
+
+                <div style="width: 100%; max-width: 300px;">
+                    <button class="btn btn-gold" onclick="game.showLobby()" style="margin-bottom: 12px; height: 56px;" data-i18n="newGame">Neues Spiel</button>
+                    <button class="btn" onclick="game.showRules()" data-i18n="rules">Spielregeln</button>
+                </div>
+            </div>
+
+            <!-- LOBBY -->
+            <div id="overlay-lobby" class="overlay">
+                <div class="glass-card">
+                    <div style="font-size: 20px; color: var(--gold); margin-bottom: 24px; text-align: center; letter-spacing: 2px;" data-i18n="players">SPIELER</div>
+                    <div id="lobbyList" style="margin-bottom: 20px;"></div>
+                    <button class="btn" onclick="game.addPlayer()" style="margin-bottom: 12px; font-size: 24px; line-height: 0;">+</button>
+                    <button class="btn btn-gold" onclick="game.startGame()" id="btnStart" style="margin-bottom: 12px;" data-i18n="start">Start</button>
+                    <button class="btn" onclick="game.showStart()" data-i18n="back">Zurück</button>
+                </div>
+            </div>
+
+            <!-- GAME AREA -->
+            <div id="overlay-game" class="overlay" style="padding: 0;">
+                <div id="view-dice" class="dice-container">
+                    <div class="dice" onclick="game.roll()">🎲</div>
+                    <div class="dice" onclick="game.roll()">🔥</div>
+                </div>
+
+                <div id="card-action" class="game-card">
+                    <div class="card-glow"></div>
+                    <div class="card-type">⚡ <span data-i18n="action">AKTION</span></div>
+                    <div class="card-content" id="text-action"></div>
+                    <div id="sub-action" style="color: var(--gold); font-size: 14px;"></div>
+                </div>
+
+                <div id="card-quiz" class="game-card">
+                    <div class="card-glow" style="background: linear-gradient(90deg, transparent, var(--accent), transparent);"></div>
+                    <div class="card-type" style="color: var(--accent);">🧠 <span data-i18n="quiz">WISSEN</span></div>
+                    <div class="card-content" id="text-quiz" style="font-size: 20px;"></div>
+                    <div class="quiz-options" id="quiz-options"></div>
+                </div>
+
+                <div id="card-tabu" class="game-card">
+                    <div class="card-glow" style="background: linear-gradient(90deg, transparent, var(--success), transparent);"></div>
+                    <div class="card-type" style="color: var(--success);">🚫 <span data-i18n="forbidden">VERBOTEN</span></div>
+                    <div class="card-content" id="text-tabu" style="font-size: 28px; font-weight: 600; text-transform: uppercase;"></div>
+                    <div class="forbidden-words" id="list-tabu"></div>
+                </div>
+
+                <div id="card-z" class="game-card">
+                    <div class="card-glow" style="background: linear-gradient(90deg, transparent, var(--danger), transparent);"></div>
+                    <div class="card-type" style="color: var(--danger);">🔥 <span data-i18n="spark">FUNKEN</span></div>
+                    <div class="card-content" id="text-z" style="font-size: 22px;"></div>
+                </div>
+
+                <div id="card-chaos" class="game-card">
+                    <div class="card-glow" style="background: linear-gradient(90deg, transparent, #ff00ff, transparent); box-shadow: 0 0 30px rgba(255,0,255,0.5);"></div>
+                    <div class="card-type" style="color: #ff00ff;">⚠️ <span data-i18n="chaosEvent">CHAOS</span></div>
+                    <div class="card-content" id="text-chaos" style="color: #ff00ff; font-size: 20px;"></div>
+                    <div id="sub-chaos" style="color: var(--text-secondary); font-size: 14px; margin-top: 10px;"></div>
+                </div>
+            </div>
+
+            <!-- BET MODAL -->
+            <div id="modal-bet" class="modal">
+                <div class="bet-interface">
+                    <div class="bet-title" data-i18n="placeBet">EINSATZ SETZEN</div>
+                    <div class="bet-info" data-i18n="betInfo">
+                        Du hast nur noch 1 Kleidungsstück!<br>
+                        Setze einen Einsatz um zu bleiben.
+                    </div>
+                    <input type="text" class="bet-input" id="videoUrl" placeholder="Video-Link hier einfügen..." data-i18n-placeholder="videoPlaceholder">
+                    <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                        <button class="btn" onclick="game.setBetRounds(1)" id="btnRounds1" style="flex: 1;">1 <span data-i18n="round">RUNDE</span><br><small>10s/Item</small></button>
+                        <button class="btn" onclick="game.setBetRounds(3)" id="btnRounds3" style="flex: 1; opacity: 0.5;">3 <span data-i18n="rounds">RUNDEN</span><br><small>Risiko x3</small></button>
+                    </div>
+                    <div id="betSummary" style="font-size: 13px; color: var(--gold); text-align: center; margin-bottom: 20px; min-height: 40px;"></div>
+                    <button class="btn btn-gold" onclick="game.confirmBet()" data-i18n="confirmBet">EINSATZ BESTÄTIGEN</button>
+                    <button class="btn btn-danger" onclick="game.fold()" style="margin-top: 10px;" data-i18n="fold">AUFGEBEN (OUT)</button>
+                </div>
+            </div>
+
+            <!-- CHALLENGE MODAL -->
+            <div id="modal-challenge" class="modal">
+                <div class="bet-interface">
+                    <div class="bet-title" data-i18n="challengeBet">HERAUSFORDERN</div>
+                    <div class="bet-info" id="challengeInfo" data-i18n="challengeInfo">
+                        Spieler X hat einen Einsatz gesetzt.<br>
+                        Fordere ihn heraus für die gleiche Anzahl Items.
+                    </div>
+                    <div style="background: rgba(212,175,55,0.1); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border);">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px;" data-i18n="currentBet">AKTUELLER EINSATZ:</div>
+                        <div id="currentPotDetails" style="font-size: 14px; color: var(--gold);"></div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-success" onclick="game.acceptChallenge(1)">1 <span data-i18n="round">RUNDE</span><br><span data-i18n="play">SPIELEN</span></button>
+                        <button class="btn btn-success" onclick="game.acceptChallenge(3)" style="background: rgba(255,165,0,0.2); color: #ffa500; border-color: rgba(255,165,0,0.3);">3 <span data-i18n="rounds">RUNDEN</span><br>RISIKO x3</button>
+                    </div>
+                    <button class="btn" onclick="game.declineChallenge()" style="margin-top: 12px;" data-i18n="decline">ABLEHNEN</button>
+                </div>
+            </div>
+
+            <!-- BLACKJACK CHALLENGE -->
+            <div id="modal-bj-challenge" class="modal">
+                <div class="glass-card" style="max-width: 360px;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="font-size: 12px; color: var(--gold); letter-spacing: 2px; margin-bottom: 5px;" data-i18n="highStakes">HIGH STAKES</div>
+                        <div style="font-size: 20px; font-weight: 700;">21</div>
+                        <div id="bjRoundInfo" style="font-size: 11px; color: var(--text-secondary); margin-top: 5px;">Runde 1/3</div>
+                    </div>
+
+                    <div class="bj-table">
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">
+                            <span id="bjOppName">Gegner</span>
+                            <span id="bjOppScore" style="color: var(--gold); font-weight: 700;">?</span>
+                        </div>
+                        <div class="bj-hand" id="bjOppHand"></div>
+                    </div>
+
+                    <div style="text-align: center; font-size: 11px; color: #666; margin: 10px 0;" data-i18n="bjRules">WER NÄHER AN 21 GEWINNT</div>
+
+                    <div class="bj-table" style="border-color: var(--gold);">
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">
+                            <span data-i18n="you">DU</span>
+                            <span id="bjPlayerScore" style="color: var(--gold); font-weight: 700;">0</span>
+                        </div>
+                        <div class="bj-hand" id="bjPlayerHand"></div>
+                    </div>
+
+                    <div class="btn-group" style="margin-top: 20px;">
+                        <button class="btn" onclick="game.bjStand()" style="height: 50px;" data-i18n="stand">STOP</button>
+                        <button class="btn btn-gold" onclick="game.bjHit()" style="height: 50px;" data-i18n="hit">KARTE</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESULT -->
+            <div id="overlay-result" class="overlay">
+                <div class="glass-card" style="text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">🏆</div>
+                    <div style="font-size: 14px; color: var(--text-secondary); letter-spacing: 4px; margin-bottom: 10px;" data-i18n="winner">GEWINNER</div>
+                    <div id="winnerName" style="font-size: 28px; color: var(--gold); font-weight: 300; letter-spacing: 2px; margin-bottom: 30px;">-</div>
+                    <button class="btn btn-gold" onclick="game.reset()" data-i18n="newRound">NEUE RUNDE</button>
+                </div>
+            </div>
+
+            <div class="player-queue hidden" id="playerQueue"></div>
+
+            <div class="fab-container" id="fabContainer">
+                <button class="btn" onclick="game.showBj()" id="btnHighStakes" style="background: rgba(255,165,0,0.1); color: #ffa500; border: 1px solid rgba(255,165,0,0.3); margin-bottom: 8px; display: none;">
+                    🎰 <span data-i18n="highStakesChallenge">HIGH STAKES</span>
+                </button>
+                <div class="btn-group" id="gameControls">
+                    <button class="btn btn-danger" onclick="game.fail()"><span data-i18n="strip">STRIP</span> (-1)</button>
+                    <button class="btn btn-success" onclick="game.success()" data-i18n="done">GESCHAFFT ✓</button>
+                </div>
+                <button class="btn btn-gold" onclick="game.next()" id="btnNext" style="display: none;" data-i18n="next">WEITER →</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // ÜBERSETZUNGEN (MARKENFREI)
+        // ==========================================
+        const TRANSLATIONS = {
+            de: {
+                // UI
+                selectLanguage: "SPRACHE WÄHLEN",
+                continue: "WEITER",
+                highStakesEdition: "High Stakes Edition",
+                fourModes: "4 MODI",
+                twentyOne: "21",
+                riskX2: "RISIKO x2",
+                newGame: "NEUES SPIEL",
+                rules: "REGELN",
+                players: "SPIELER",
+                start: "START",
+                back: "ZURÜCK",
+                
+                // Kategorien (Markenfrei)
+                action: "AKTION",
+                quiz: "WISSEN",
+                forbidden: "VERBOTEN",  // Statt Tabu
+                spark: "FUNKEN",        // Statt Zündstoff/Tinder
+                chaosEvent: "CHAOS",
+                
+                // Spiel
+                placeBet: "EINSATZ SETZEN",
+                betInfo: "Du hast nur noch 1 Kleidungsstück!<br>Setze einen Einsatz um zu bleiben.",
+                videoPlaceholder: "Video-Link hier einfügen...",
+                round: "RUNDE",
+                rounds: "RUNDEN",
+                confirmBet: "EINSATZ BESTÄTIGEN",
+                fold: "AUFGEBEN (OUT)",
+                challengeBet: "HERAUSFORDERN",
+                challengeInfo: "Spieler X hat einen Einsatz gesetzt.<br>Fordere ihn heraus für die gleiche Anzahl Items.",
+                currentBet: "AKTUELLER EINSATZ:",
+                play: "SPIELEN",
+                decline: "ABLEHNEN",
+                highStakes: "HIGH STAKES",
+                bjRules: "WER NÄHER AN 21 GEWINNT",
+                you: "DU",
+                stand: "STOP",
+                hit: "KARTE",
+                winner: "GEWINNER",
+                newRound: "NEUE RUNDE",
+                strip: "STRIP",
+                done: "GESCHAFFT",
+                next: "WEITER",
+                highStakesChallenge: "HIGH STAKES",
+                pot: "POT",
+                
+                // Zusätzliche Texte
+                total: "GESAMT",
+                onLoss: "BEI VERLUST",
+                timePenalty: "ZEITSTRAFE",
+                immediate: "SOFORT",
+                won: "GEWONNEN!",
+                takeover: "Du übernimmst den Einsatz.",
+                lost: "VERLOREN!",
+                penalty: "STRAFE",
+                enterVideoLink: "Bitte Video-Link eingeben!",
+                hasBet: "hat einen Einsatz gesetzt.",
+                challengeFor: "Fordere ihn heraus für",
+                items: "ITEMS",
+                videoTime: "Sekunden Video",
+                
+                flag: "🇩🇪",
+                langCode: "DE"
+            },
+            en: {
+                selectLanguage: "SELECT LANGUAGE",
+                continue: "CONTINUE",
+                highStakesEdition: "High Stakes Edition",
+                fourModes: "4 MODES",
+                twentyOne: "21",
+                riskX2: "RISK x2",
+                newGame: "NEW GAME",
+                rules: "RULES",
+                players: "PLAYERS",
+                start: "START",
+                back: "BACK",
+                
+                action: "ACTION",
+                quiz: "QUIZ",
+                forbidden: "FORBIDDEN",  // Instead of Taboo
+                spark: "SPARK",          // Instead of Tinder
+                chaosEvent: "CHAOS",
+                
+                placeBet: "PLACE BET",
+                betInfo: "You only have 1 item left!<br>Place a bet to stay in.",
+                videoPlaceholder: "Paste video link here...",
+                round: "ROUND",
+                rounds: "ROUNDS",
+                confirmBet: "CONFIRM BET",
+                fold: "FOLD (OUT)",
+                challengeBet: "CHALLENGE",
+                challengeInfo: "Player X placed a bet.<br>Challenge them for the same items.",
+                currentBet: "CURRENT BET:",
+                play: "PLAY",
+                decline: "DECLINE",
+                highStakes: "HIGH STAKES",
+                bjRules: "CLOSEST TO 21 WINS",
+                you: "YOU",
+                stand: "STAND",
+                hit: "HIT",
+                winner: "WINNER",
+                newRound: "NEW ROUND",
+                strip: "STRIP",
+                done: "DONE",
+                next: "NEXT",
+                highStakesChallenge: "HIGH STAKES",
+                pot: "POT",
+                
+                total: "TOTAL",
+                onLoss: "ON LOSS",
+                timePenalty: "TIME PENALTY",
+                immediate: "IMMEDIATE",
+                won: "WON!",
+                takeover: "You take over the bet.",
+                lost: "LOST!",
+                penalty: "PENALTY",
+                enterVideoLink: "Please enter video link!",
+                hasBet: "placed a bet.",
+                challengeFor: "Challenge for",
+                items: "ITEMS",
+                videoTime: "seconds video",
+                
+                flag: "🇬🇧",
+                langCode: "EN"
+            },
+            es: {
+                selectLanguage: "SELECCIONAR IDIOMA",
+                continue: "CONTINUAR",
+                highStakesEdition: "Edición Alto Riesgo",
+                fourModes: "4 MODOS",
+                twentyOne: "21",
+                riskX2: "RIESGO x2",
+                newGame: "NUEVO JUEGO",
+                rules: "REGLAS",
+                players: "JUGADORES",
+                start: "INICIAR",
+                back: "ATRÁS",
+                
+                action: "ACCIÓN",
+                quiz: "SABER",
+                forbidden: "PROHIBIDO",  // En vez de Tabú
+                spark: "CHISPA",         // En vez de Tinder
+                chaosEvent: "CAOS",
+                
+                placeBet: "APOSTAR",
+                betInfo: "¡Solo te queda 1 prenda!<br>Haz una apuesta para quedarte.",
+                videoPlaceholder: "Pega el enlace del video aquí...",
+                round: "RONDA",
+                rounds: "RONDAS",
+                confirmBet: "CONFIRMAR APUESTA",
+                fold: "RETIRARSE (OUT)",
+                challengeBet: "RETAR",
+                challengeInfo: "El jugador X hizo una apuesta.<br>Retalo por la misma cantidad.",
+                currentBet: "APUESTA ACTUAL:",
+                play: "JUGAR",
+                decline: "RECHAZAR",
+                highStakes: "ALTO RIESGO",
+                bjRules: "EL MÁS CERCANO A 21 GANA",
+                you: "TÚ",
+                stand: "PLANTARSE",
+                hit: "PEDIR",
+                winner: "GANADOR",
+                newRound: "NUEVA RONDA",
+                strip: "QUITARSE",
+                done: "HECHO",
+                next: "SIGUIENTE",
+                highStakesChallenge: "ALTO RIESGO",
+                pot: "BOTE",
+                
+                total: "TOTAL",
+                onLoss: "AL PERDER",
+                timePenalty: "PENALTI DE TIEMPO",
+                immediate: "INMEDIATO",
+                won: "¡GANADO!",
+                takeover: "Tomas el control de la apuesta.",
+                lost: "¡PERDIDO!",
+                penalty: "PENALTY",
+                enterVideoLink: "¡Por favor introduce el enlace!",
+                hasBet: "hizo una apuesta.",
+                challengeFor: "Retar por",
+                items: "PRENDAS",
+                videoTime: "segundos de video",
+                
+                flag: "🇪🇸",
+                langCode: "ES"
+            },
+            fr: {
+                selectLanguage: "CHOISIR LA LANGUE",
+                continue: "CONTINUER",
+                highStakesEdition: "Édition Haute Mise",
+                fourModes: "4 MODES",
+                twentyOne: "21",
+                riskX2: "RISQUE x2",
+                newGame: "NOUVELLE PARTIE",
+                rules: "RÈGLES",
+                players: "JOUEURS",
+                start: "DÉMARRER",
+                back: "RETOUR",
+                
+                action: "ACTION",
+                quiz: "SAVOIR",
+                forbidden: "INTERDIT",   // Au lieu de Tabou
+                spark: "ÉTINCELLE",      // Au lieu de Tinder
+                chaosEvent: "CHAOS",
+                
+                placeBet: "PARIER",
+                betInfo: "Il ne vous reste qu'un vêtement!<br>Pariez pour rester.",
+                videoPlaceholder: "Collez le lien vidéo ici...",
+                round: "MANCHE",
+                rounds: "MANCHES",
+                confirmBet: "CONFIRMER",
+                fold: "SE COUCHER",
+                challengeBet: "DÉFIER",
+                challengeInfo: "Le joueur X a parié.<br>Défiez-le pour les mêmes items.",
+                currentBet: "MISE ACTUELLE:",
+                play: "JOUER",
+                decline: "REFUSER",
+                highStakes: "HAUTE MISE",
+                bjRules: "LE PLUS PRÈS DE 21 GAGNE",
+                you: "VOUS",
+                stand: "RESTER",
+                hit: "CARTE",
+                winner: "GAGNANT",
+                newRound: "NOUVELLE MANCHE",
+                strip: "ENLEVER",
+                done: "FAIT",
+                next: "SUIVANT",
+                highStakesChallenge: "HAUTE MISE",
+                pot: "POT",
+                
+                total: "TOTAL",
+                onLoss: "EN CAS DE PERTE",
+                timePenalty: "PÉNALITÉ TEMPS",
+                immediate: "IMMÉDIAT",
+                won: "GAGNÉ!",
+                takeover: "Vous prenez le contrôle.",
+                lost: "PERDU!",
+                penalty: "PÉNALITÉ",
+                enterVideoLink: "Veuillez entrer le lien vidéo!",
+                hasBet: "a parié.",
+                challengeFor: "Défier pour",
+                items: "VÊTEMENTS",
+                videoTime: "secondes vidéo",
+                
+                flag: "🇫🇷",
+                langCode: "FR"
+            },
+            it: {
+                selectLanguage: "SELEZIONA LINGUA",
+                continue: "CONTINUA",
+                highStakesEdition: "Edizione Alto Rischio",
+                fourModes: "4 MODALITÀ",
+                twentyOne: "21",
+                riskX2: "RISCHIO x2",
+                newGame: "NUOVA PARTITA",
+                rules: "REGOLE",
+                players: "GIOCATORI",
+                start: "INIZIA",
+                back: "INDIETRO",
+                
+                action: "AZIONE",
+                quiz: "SAPIENZA",
+                forbidden: "VIETATO",    // Invece di Tabù
+                spark: "SCINTILLA",      // Invece di Tinder
+                chaosEvent: "CAOS",
+                
+                placeBet: "PUNTA",
+                betInfo: "Ti resta solo 1 capo!<br>Fai una puntata per restare.",
+                videoPlaceholder: "Incolla qui il link video...",
+                round: "ROUND",
+                rounds: "ROUND",
+                confirmBet: "CONFERMA",
+                fold: "PASSA (OUT)",
+                challengeBet: "SFIDA",
+                challengeInfo: "Il giocatore X ha puntato.<br>Sfidal per lo stesso numero.",
+                currentBet: "PUNTATA ATTUALE:",
+                play: "GIOCA",
+                decline: "RIFIUTA",
+                highStakes: "ALTO RISCHIO",
+                bjRules: "CHI È PIÙ VICINO A 21 VINCE",
+                you: "TU",
+                stand: "STAI",
+                hit: "CARTA",
+                winner: "VINCITORE",
+                newRound: "NUOVO ROUND",
+                strip: "TOGLI",
+                done: "FATTO",
+                next: "AVANTI",
+                highStakesChallenge: "ALTO RISCHIO",
+                pot: "PUNTATA",
+                
+                total: "TOTALE",
+                onLoss: "IN CASO DI PERDITA",
+                timePenalty: "PENALITÀ TEMPO",
+                immediate: "IMMEDIATO",
+                won: "VINTO!",
+                takeover: "Prendi il controllo.",
+                lost: "PERSO!",
+                penalty: "PENALITÀ",
+                enterVideoLink: "Per favore inserisci il link!",
+                hasBet: "ha puntato.",
+                challengeFor: "Sfida per",
+                items: "CAPI",
+                videoTime: "secondi video",
+                
+                flag: "🇮🇹",
+                langCode: "IT"
+            },
+            pt: {
+                selectLanguage: "SELECIONAR IDIOMA",
+                continue: "CONTINUAR",
+                highStakesEdition: "Edição Alto Risco",
+                fourModes: "4 MODOS",
+                twentyOne: "21",
+                riskX2: "RISCO x2",
+                newGame: "NOVO JOGO",
+                rules: "REGRAS",
+                players: "JOGADORES",
+                start: "INICIAR",
+                back: "VOLTAR",
+                
+                action: "AÇÃO",
+                quiz: "SABER",
+                forbidden: "PROIBIDO",   // Em vez de Tabu
+                spark: "FAÍSCA",         // Em vez de Tinder
+                chaosEvent: "CAOS",
+                
+                placeBet: "APOSTAR",
+                betInfo: "Só te resta 1 peça!<br>Aposta para ficar no jogo.",
+                videoPlaceholder: "Cole o link do vídeo aqui...",
+                round: "RODADA",
+                rounds: "RODADAS",
+                confirmBet: "CONFIRMAR",
+                fold: "DESISTIR (OUT)",
+                challengeBet: "DESAFIAR",
+                challengeInfo: "Jogador X fez uma aposta.<br>Desafia-o pela mesma quantia.",
+                currentBet: "APOSTA ATUAL:",
+                play: "JOGAR",
+                decline: "RECUSAR",
+                highStakes: "ALTO RISCO",
+                bjRules: "QUEM CHEGAR MAIS PERTO DE 21 GANHA",
+                you: "TU",
+                stand: "PARAR",
+                hit: "CARTA",
+                winner: "VENCEDOR",
+                newRound: "NOVA RODADA",
+                strip: "TIRAR",
+                done: "FEITO",
+                next: "PRÓXIMO",
+                highStakesChallenge: "ALTO RISCO",
+                pot: "POTE",
+                
+                total: "TOTAL",
+                onLoss: "AO PERDER",
+                timePenalty: "PENALIDADE TEMPO",
+                immediate: "IMEDIATO",
+                won: "GANHOU!",
+                takeover: "Tomas controlo da aposta.",
+                lost: "PERDEU!",
+                penalty: "PENALIDADE",
+                enterVideoLink: "Por favor coloca o link do vídeo!",
+                hasBet: "fez uma aposta.",
+                challengeFor: "Desafiar por",
+                items: "PEÇAS",
+                videoTime: "segundos de vídeo",
+                
+                flag: "🇵🇹",
+                langCode: "PT"
+            },
+            nl: {
+                selectLanguage: "SELECTEER TAAL",
+                continue: "DOORGAAN",
+                highStakesEdition: "High Stakes Editie",
+                fourModes: "4 MODI",
+                twentyOne: "21",
+                riskX2: "RISICO x2",
+                newGame: "NIEUW SPEL",
+                rules: "REGELS",
+                players: "SPELERS",
+                start: "START",
+                back: "TERUG",
+                
+                action: "ACTIE",
+                quiz: "KENNIS",
+                forbidden: "VERBODEN",   // In plaats van Taboe
+                spark: "VONK",           // In plaats van Tinder
+                chaosEvent: "CHAOS",
+                
+                placeBet: "INZETTEN",
+                betInfo: "Je hebt nog maar 1 kledingstuk!<br>Zet een inzet om te blijven.",
+                videoPlaceholder: "Plak hier de video-link...",
+                round: "RONDE",
+                rounds: "RONDES",
+                confirmBet: "BEVESTIGEN",
+                fold: "PASSEN (OUT)",
+                challengeBet: "UITDAGEN",
+                challengeInfo: "Speler X heeft ingezet.<br>Daag uit voor hetzelfde aantal.",
+                currentBet: "HUIDIGE INZET:",
+                play: "SPELEN",
+                decline: "AFWIJZEN",
+                highStakes: "HIGH STAKES",
+                bjRules: "DICHTST BIJ 21 WINT",
+                you: "JIJ",
+                stand: "STOP",
+                hit: "KAART",
+                winner: "WINNAAR",
+                newRound: "NIEUWE RONDE",
+                strip: "UITTREKKEN",
+                done: "KLAAR",
+                next: "VOLGENDE",
+                highStakesChallenge: "HIGH STAKES",
+                pot: "POT",
+                
+                total: "TOTAAL",
+                onLoss: "BIJ VERLIES",
+                timePenalty: "TIJDSTRAF",
+                immediate: "ONMIDDELLIJK",
+                won: "GEWONNEN!",
+                takeover: "Jij neemt de inzet over.",
+                lost: "VERLOREN!",
+                penalty: "STRAF",
+                enterVideoLink: "Voer alstublieft de video-link in!",
+                hasBet: "heeft ingezet.",
+                challengeFor: "Daag uit voor",
+                items: "ITEMS",
+                videoTime: "seconden video",
+                
+                flag: "🇳🇱",
+                langCode: "NL"
+            }
+        };
+
+        // ==========================================
+        // KARTENDECKS PRO SPRACHE (MARKENFREI)
+        // ==========================================
+        const DECKS = {
+            de: {
+                actions: [
+                    {t: "Tausche dein Oberteil mit links", i: 3}, {t: "Lass dich 30s kitzeln", i: 2},
+                    {t: "Flüstere ein Geheimnis ins Ohr", i: 4}, {t: "Trinke ohne Hände", i: 3},
+                    {t: "Mach ein anzügliches Kompliment", i: 2}, {t: "Ziehe etwas aus", i: 5},
+                    {t: "Wahrheit oder Strip?", i: 4}, {t: "Simuliere sexy Werbung", i: 3},
+                    {t: "Massiere die Schultern", i: 2}, {t: "Spiele erotische Szene nach", i: 5},
+                    {t: "Errate wer dich berührt (blind)", i: 3}, {t: "Tausche den Platz", i: 2},
+                    {t: "Zeige verführerisches Gesicht", i: 3}, {t: "Iss Eiswürfel aus Dekolleté", i: 4},
+                    {t: "Erzähle peinlichste Intimität", i: 4}, {t: "Gib einen leidenschaftlichen Kuss", i: 3},
+                    {t: "Lecke Sahne vom Bauch", i: 5}, {t: "Mache einen Striptease (30s)", i: 5},
+                    {t: "Tausche alle Klamotten mit rechts", i: 4}, {t: "Beschreibe Körper links", i: 4}
+                ],
+                quiz: [
+                    {q: "Wie viele Schritte pro Tag (Durchschnitt)?", a: ["3.000", "10.000", "15.000"], c: 1},
+                    {q: "Größtes innere Organ?", a: ["Herz", "Leber", "Lunge"], c: 1},
+                    {q: "Zähne Erwachsener?", a: ["28", "32", "36"], c: 1},
+                    {q: "Erstes iPhone Jahr?", a: ["2005", "2007", "2009"], c: 1},
+                    {q: "Hauptstadt Australien?", a: ["Sydney", "Melbourne", "Canberra"], c: 2},
+                    {q: "Planeten im Sonnensystem?", a: ["7", "8", "9"], c: 1},
+                    {q: "Element 'Au'?", a: ["Silber", "Aluminium", "Gold"], c: 2},
+                    {q: "Oscars für Titanic?", a: ["9", "11", "13"], c: 1},
+                    {q: "Wie viele Herzen hat ein Oktopus?", a: ["1", "2", "3"], c: 2},
+                    {q: "Größtes Land der Welt?", a: ["China", "USA", "Russland"], c: 2}
+                ],
+                forbidden: [  // Statt tabu
+                    {w: "Orgasmus", f: ["Höhepunkt", "Lust", "Kommen"]}, {w: "Kondom", f: ["Gummi", "Schutz", "Verhütung"]},
+                    {w: "Dating", f: ["App", "Swipe", "Match"]}, {w: "Kamasutra", f: ["Stellung", "Buch", "Intimität"]},
+                    {w: "Striptease", f: ["Ausziehen", "Tanz", "Club"]}, {w: "One-Night-Stand", f: ["Intimität", "Nacht", "Fremder"]},
+                    {w: "Potenzmittel", f: ["Kraft", "Pille", "Stehen"]}, {w: "Aphrodisiakum", f: ["Lust", "Mittel", "Essen"]},
+                    {w: "Dreier", f: ["Intimität", "Drei", "Gruppe"]}, {w: "Fesseln", f: ["Seil", "Bondage", "BDSM"]}
+                ],
+                spark: ["Geheimste Fantasie?", "Mit wem hier wärst du intim?", "Verruchteste Tat?", "Letzter erotischer Traum?", 
+                    "Welche Körperstelle macht dich an?", "Lieblingsstellung?", "Peinlichster Intimitäts-Moment?", "Dominant oder devot?",
+                    "Schonmal betrogen?", "Wann war deine letzte Intimität?", "Größte Abturn?", "Schonmal Aufnahme gemacht?",
+                    "Schonmal im Freien?", "Lieblings-Spielzeug?", "Schonmal gleichgeschlechtlich?"]
+            },
+            en: {
+                actions: [
+                    {t: "Swap shirt with left player", i: 3}, {t: "Get tickled for 30s", i: 2},
+                    {t: "Whisper a secret in their ear", i: 4}, {t: "Drink without hands", i: 3},
+                    {t: "Give a naughty compliment", i: 2}, {t: "Take something off", i: 5},
+                    {t: "Truth or Strip?", i: 4}, {t: "Act out a sensual commercial", i: 3},
+                    {t: "Massage shoulders", i: 2}, {t: "Re-enact an intimate scene", i: 5},
+                    {t: "Guess who's touching you (blind)", i: 3}, {t: "Swap seats", i: 2},
+                    {t: "Show your seductive face", i: 3}, {t: "Eat ice from cleavage", i: 4},
+                    {t: "Tell your most embarrassing intimacy", i: 4}, {t: "Give a passionate kiss", i: 3},
+                    {t: "Lick cream off stomach", i: 5}, {t: "Give a striptease (30s)", i: 5},
+                    {t: "Swap all clothes with right player", i: 4}, {t: "Describe body of left person", i: 4}
+                ],
+                quiz: [
+                    {q: "Steps per day (average)?", a: ["3,000", "10,000", "15,000"], c: 1},
+                    {q: "Largest internal organ?", a: ["Heart", "Liver", "Lung"], c: 1},
+                    {q: "Adult teeth count?", a: ["28", "32", "36"], c: 1},
+                    {q: "First iPhone year?", a: ["2005", "2007", "2009"], c: 1},
+                    {q: "Capital of Australia?", a: ["Sydney", "Melbourne", "Canberra"], c: 2},
+                    {q: "Planets in solar system?", a: ["7", "8", "9"], c: 1},
+                    {q: "Element 'Au'?", a: ["Silver", "Aluminum", "Gold"], c: 2},
+                    {q: "Oscars for Titanic?", a: ["9", "11", "13"], c: 1},
+                    {q: "Hearts in an octopus?", a: ["1", "2", "3"], c: 2},
+                    {q: "Largest country?", a: ["China", "USA", "Russia"], c: 2}
+                ],
+                forbidden: [
+                    {w: "Orgasm", f: ["Climax", "Pleasure", "Come"]}, {w: "Protection", f: ["Rubber", "Safe", "Condom"]},
+                    {w: "Dating", f: ["App", "Swipe", "Match"]}, {w: "Kamasutra", f: ["Position", "Book", "Intimacy"]},
+                    {w: "Striptease", f: ["Undress", "Dance", "Club"]}, {w: "Hookup", f: ["Night", "Stranger", "Casual"]},
+                    {w: "Enhancement", f: ["Pill", "Performance", "Strength"]}, {w: "Aphrodisiac", f: ["Desire", "Drug", "Food"]},
+                    {w: "Threesome", f: ["Three", "Group", "Intimacy"]}, {w: "Restraints", f: ["Rope", "Tie", "Kink"]}
+                ],
+                spark: ["Secret fantasy?", "Who here would you be intimate with?", "Wildest thing done?", "Last intimate dream?",
+                    "Which body part excites you most?", "Favorite position?", "Most embarrassing moment?", "Dominant or submissive?",
+                    "Ever cheated?", "When was last intimacy?", "Biggest turn-off?", "Ever recorded?",
+                    "Ever done outdoors?", "Favorite toy?", "Ever same-sex experience?"]
+            },
+            es: {
+                actions: [
+                    {t: "Cambia camisa con izquierda", i: 3}, {t: "Cosquillas 30s", i: 2},
+                    {t: "Susurra secreto al oído", i: 4}, {t: "Bebe sin manos", i: 3},
+                    {t: "Cumplido atrevido", i: 2}, {t: "Quítate algo", i: 5},
+                    {t: "¿Verdad o Strip?", i: 4}, {t: "Simula anuncio sensual", i: 3},
+                    {t: "Masaje de hombros", i: 2}, {t: "Recrea escena íntima", i: 5},
+                    {t: "Adivina quién toca (vendado)", i: 3}, {t: "Cambia asiento", i: 2},
+                    {t: "Cara seductora", i: 3}, {t: "Come hielo del escote", i: 4},
+                    {t: "Historia íntima vergonzosa", i: 4}, {t: "Beso apasionado", i: 3},
+                    {t: "Lame nata del ombligo", i: 5}, {t: "Striptease (30s)", i: 5},
+                    {t: "Cambia ropa con derecha", i: 4}, {t: "Describe cuerpo izquierda", i: 4}
+                ],
+                quiz: [
+                    {q: "¿Pasos por día (promedio)?", a: ["3.000", "10.000", "15.000"], c: 1},
+                    {q: "¿Órgano interno más grande?", a: ["Corazón", "Hígado", "Pulmón"], c: 1},
+                    {q: "¿Dientes adulto?", a: ["28", "32", "36"], c: 1},
+                    {q: "¿Primer iPhone (año)?", a: ["2005", "2007", "2009"], c: 1},
+                    {q: "¿Capital Australia?", a: ["Sídney", "Melbourne", "Canberra"], c: 2},
+                    {q: "¿Planetas sistema solar?", a: ["7", "8", "9"], c: 1},
+                    {q: "¿Elemento 'Au'?", a: ["Plata", "Aluminio", "Oro"], c: 2},
+                    {q: "¿Oscars Titanic?", a: ["9", "11", "13"], c: 1},
+                    {q: "¿Corazones pulpo?", a: ["1", "2", "3"], c: 2},
+                    {q: "¿País más grande?", a: ["China", "USA", "Rusia"], c: 2}
+                ],
+                forbidden: [
+                    {w: "Orgasmo", f: ["Clímax", "Placer", "Venirse"]}, {w: "Protección", f: ["Goma", "Seguro", "Preservativo"]},
+                    {w: "Citas", f: ["App", "Deslizar", "Match"]}, {w: "Kamasutra", f: ["Postura", "Libro", "Intimidad"]},
+                    {w: "Striptease", f: ["Desvestirse", "Baile", "Club"]}, {w: "Aventura", f: ["Noche", "Desconocido", "Casual"]},
+                    {w: "Vigorizante", f: ["Pastilla", "Potencia", "Fuerza"]}, {w: "Afrodisíaco", f: ["Deseo", "Medicina", "Comida"]},
+                    {w: "Trío", f: ["Tres", "Grupo", "Intimidad"]}, {w: "Ataduras", f: ["Cuerda", "Amarre", "Fetiche"]}
+                ],
+                spark: ["¿Fantasía secreta?", "¿Con quién serías íntimo?", "¿Acto más atrevido?", "¿Último sueño erótico?",
+                    "¿Qué parte te excita más?", "¿Posición favorita?", "¿Momento más vergonzoso?", "¿Dominante o sumiso?",
+                    "¿Alguna vez infidelidad?", "¿Cuándo última intimidad?", "¿Qué te apaga?", "¿Alguna grabación?",
+                    "¿Alguna vez al aire libre?", "¿Juguete favorito?", "¿Experiencia mismo sexo?"]
+            },
+            fr: {
+                actions: [
+                    {t: "Échange haut avec gauche", i: 3}, {t: "Chatouilles 30s", i: 2},
+                    {t: "Secret à l'oreille", i: 4}, {t: "Boire sans mains", i: 3},
+                    {t: "Compliment osé", i: 2}, {t: "Enlève quelque chose", i: 5},
+                    {t: "Vérité ou Strip?", i: 4}, {t: "Pub sensuelle", i: 3},
+                    {t: "Massage épaules", i: 2}, {t: "Scène intime", i: 5},
+                    {t: "Devine qui touche (aveugle)", i: 3}, {t: "Change place", i: 2},
+                    {t: "Visage séducteur", i: 3}, {t: "Glace dans décolleté", i: 4},
+                    {t: "Intimité embarrassante", i: 4}, {t: "Baiser passionné", i: 3},
+                    {t: "Lèche crème du ventre", i: 5}, {t: "Striptease (30s)", i: 5},
+                    {t: "Change vêtements droite", i: 4}, {t: "Décris corps gauche", i: 4}
+                ],
+                quiz: [
+                    {q: "Pas par jour (moyenne)?", a: ["3 000", "10 000", "15 000"], c: 1},
+                    {q: "Organe interne plus grand?", a: ["Cœur", "Foie", "Poumon"], c: 1},
+                    {q: "Dents adulte?", a: ["28", "32", "36"], c: 1},
+                    {q: "Premier iPhone (année)?", a: ["2005", "2007", "2009"], c: 1},
+                    {q: "Capitale Australie?", a: ["Sydney", "Melbourne", "Canberra"], c: 2},
+                    {q: "Planètes système solaire?", a: ["7", "8", "9"], c: 1},
+                    {q: "Élément 'Au'?", a: ["Argent", "Aluminium", "Or"], c: 2},
+                    {q: "Oscars Titanic?", a: ["9", "11", "13"], c: 1},
+                    {q: "Cœurs pieuvre?", a: ["1", "2", "3"], c: 2},
+                    {q: "Plus grand pays?", a: ["Chine", "USA", "Russie"], c: 2}
+                ],
+                forbidden: [
+                    {w: "Orgasme", f: ["Sommet", "Plaisir", "Jouir"]}, {w: "Protection", f: ["Capote", "Préservatif", "Sécurité"]},
+                    {w: "Rendez-vous", f: ["App", "Glisser", "Match"]}, {w: "Kamasutra", f: ["Position", "Livre", "Intimité"]},
+                    {w: "Striptease", f: ["Se déshabiller", "Danse", "Boîte"]}, {w: "Plan cul", f: ["Nuit", "Inconnu", "Casual"]},
+                    {w: "Stimulant", f: ["Pilule", "Puissance", "Force"]}, {w: "Aphrodisiaque", f: ["Désir", "Produit", "Nourriture"]},
+                    {w: "Plan à trois", f: ["Trois", "Groupe", "Intimité"]}, {w: "Contraintes", f: ["Corde", "Attacher", "Fétiche"]}
+                ],
+                spark: ["Fantasme secret?", "Avec qui ici serais-tu intime?", "Acte le plus vicieux?", "Dernier rêve intime?",
+                    "Quelle partie t'excite le plus?", "Position préférée?", "Moment le plus gênant?", "Dom ou soumis?",
+                    "Déjà trompé?", "Quand dernière intimité?", "Plus gros turn-off?", "Déjà filmé?",
+                    "Déjà fait dehors?", "Jouet préféré?", "Déjà expérience même sexe?"]
+            },
+            it: {
+                actions: [
+                    {t: "Scambia maglietta sinistra", i: 3}, {t: "Solletico 30s", i: 2},
+                    {t: "Sussurro segreto", i: 4}, {t: "Bere senza mani", i: 3},
+                    {t: "Complimento spinto", i: 2}, {t: "Togli qualcosa", i: 5},
+                    {t: "Verità o Strip?", i: 4}, {t: "Pubblicità sensuale", i: 3},
+                    {t: "Massaggio spalle", i: 2}, {t: "Scena intima", i: 5},
+                    {t: "Indovina tocco (bendato)", i: 3}, {t: "Cambia posto", i: 2},
+                    {t: "Faccia seducente", i: 3}, {t: "Mangia ghiaccio décolleté", i: 4},
+                    {t: "Intimità imbarazzante", i: 4}, {t: "Bacio appassionato", i: 3},
+                    {t: "Lecchi panna dalla pancia", i: 5}, {t: "Spogliarello (30s)", i: 5},
+                    {t: "Cambia vestiti destra", i: 4}, {t: "Descrivi corpo sinistra", i: 4}
+                ],
+                quiz: [
+                    {q: "Passi al giorno (media)?", a: ["3.000", "10.000", "15.000"], c: 1},
+                    {q: "Organo interno più grande?", a: ["Cuore", "Fegato", "Polmone"], c: 1},
+                    {q: "Denti adulto?", a: ["28", "32", "36"], c: 1},
+                    {q: "Primo iPhone (anno)?", a: ["2005", "2007", "2009"], c: 1},
+                    {q: "Capitale Australia?", a: ["Sydney", "Melbourne", "Canberra"], c: 2},
+                    {q: "Pianeti sistema solare?", a: ["7", "8", "9"], c: 1},
+                    {q: "Elemento 'Au'?", a: ["Argento", "Alluminio", "Oro"], c: 2},
+                    {q: "Oscar Titanic?", a: ["9", "11", "13"], c: 1},
+                    {q: "Cuori polpo?", a: ["1", "2", "3"], c: 2},
+                    {q: "Paese più grande?", a: ["Cina", "USA", "Russia"], c: 2}
+                ],
+                forbidden: [
+                    {w: "Orgasmo", f: ["Climax", "Piacere", "Venire"]}, {w: "Protezione", f: ["Gomma", "Sicuro", "Preservativo"]},
+                    {w: "Appuntamenti", f: ["App", "Scorrere", "Match"]}, {w: "Kamasutra", f: ["Posizione", "Libro", "Intimità"]},
+                    {w: "Spogliarello", f: ["Spogliarsi", "Danza", "Club"]}, {w: "Avventura", f: ["Notte", "Sconosciuto", "Casual"]},
+                    {w: "Stimolante", f: ["Pillola", "Potenza", "Forza"]}, {w: "Afrodisiaco", f: ["Desiderio", "Farmaco", "Cibo"]},
+                    {w: "Trio", f: ["Tre", "Gruppo", "Intimità"]}, {w: "Vincoli", f: ["Corda", "Legare", "Fetiche"]}
+                ],
+                spark: ["Fantasia segreta?", "Con chi qui saresti intimo?", "Atto più vizioso?", "Ultimo sogno intimo?",
+                    "Quale parte ti eccita di più?", "Posizione preferita?", "Momento più imbarazzante?", "Dom o sottomesso?",
+                    "Mai tradito?", "Quando ultima intimità?", "Cosa ti spegne?", "Mai registrato?",
+                    "Mai fatto all'aperto?", "Giocattolo preferito?", "Mai esperienza omosessuale?"]
+            },
+            pt: {
+                actions: [
+                    {t: "Troca camisa esquerda", i: 3}, {t: "Cócegas 30s", i: 2},
+                    {t: "Sussurro segredo", i: 4}, {t: "Bebe sem mãos", i: 3},
+                    {t: "Elogio atrevido", i: 2}, {t: "Tira algo", i: 5},
+                    {t: "Verdade ou Strip?", i: 4}, {t: "Anúncio sensual", i: 3},
+                    {t: "Massagem ombros", i: 2}, {t: "Cena íntima", i: 5},
+                    {t: "Adivinha toque (vendado)", i: 3}, {t: "Troca lugar", i: 2},
+                    {t: "Cara sedutora", i: 3}, {t: "Come gelo decote", i: 4},
+                    {t: "Intimidade embaraçosa", i: 4}, {t: "Beijo apaixonado", i: 3},
+                    {t: "Lambe natas barriga", i: 5}, {t: "Striptease (30s)", i: 5},
+                    {t: "Troca roupa direita", i: 4}, {t: "Descreve corpo esquerda", i: 4}
+                ],
+                quiz: [
+                    {q: "Passos por dia (média)?", a: ["3.000", "10.000", "15.000"], c: 1},
+                    {q: "Órgão interno maior?", a: ["Coração", "Fígado", "Pulmão"], c: 1},
+                    {q: "Dentes adulto?", a: ["28", "32", "36"], c: 1},
+                    {q: "Primeiro iPhone (ano)?", a: ["2005", "2007", "2009"], c: 1},
+                    {q: "Capital Austrália?", a: ["Sydney", "Melbourne", "Canberra"], c: 2},
+                    {q: "Planetas sistema solar?", a: ["7", "8", "9"], c: 1},
+                    {q: "Elemento 'Au'?", a: ["Prata", "Alumínio", "Ouro"], c: 2},
+                    {q: "Oscars Titanic?", a: ["9", "11", "13"], c: 1},
+                    {q: "Corações polvo?", a: ["1", "2", "3"], c: 2},
+                    {q: "Maior país?", a: ["China", "USA", "Rússia"], c: 2}
+                ],
+                forbidden: [
+                    {w: "Orgasmo", f: ["Clímax", "Prazer", "Gozar"]}, {w: "Proteção", f: ["Camisinha", "Seguro", "Preservativo"]},
+                    {w: "Encontros", f: ["App", "Deslizar", "Match"]}, {w: "Kamasutra", f: ["Posição", "Livro", "Intimidade"]},
+                    {w: "Striptease", f: ["Tirar roupa", "Dança", "Boate"]}, {w: "Aventura", f: ["Noite", "Desconhecido", "Casual"]},
+                    {w: "Estimulante", f: ["Comprimido", "Potência", "Força"]}, {w: "Afrodisíaco", f: ["Tesão", "Remédio", "Comida"]},
+                    {w: "Ménage", f: ["Três", "Grupo", "Intimidade"]}, {w: "Amarrações", f: ["Corda", "Prender", "Fetiche"]}
+                ],
+                spark: ["Fantasia secreta?", "Com quem aqui serias íntimo?", "Ato mais atrevido?", "Último sonho íntimo?",
+                    "Qual parte te excita mais?", "Posição favorita?", "Momento mais embaraçoso?", "Dominador ou submisso?",
+                    "Já traíste?", "Quando última intimidade?", "O que te desliga?", "Já gravaste?",
+                    "Já fizeste ao ar livre?", "Brinquedo favorito?", "Já experiência mesmo sexo?"]
+            },
+            nl: {
+                actions: [
+                    {t: "Ruil shirt met links", i: 3}, {t: "Kietelen 30s", i: 2},
+                    {t: "Fluister geheim", i: 4}, {t: "Drink zonder handen", i: 3},
+                    {t: "Stoute compliment", i: 2}, {t: "Doe iets uit", i: 5},
+                    {t: "Waarheid of Strip?", i: 4}, {t: "Sensuele reclame", i: 3},
+                    {t: "Massage schouders", i: 2}, {t: "Intieme scène", i: 5},
+                    {t: "Raad wie raakt (blind)", i: 3}, {t: "Wissel plek", i: 2},
+                    {t: "Verleidelijk gezicht", i: 3}, {t: "Eet ijs uit decolleté", i: 4},
+                    {t: "Gênante intimiteit", i: 4}, {t: "Hartstochtelijke kus", i: 3},
+                    {t: "Lik room van buik", i: 5}, {t: "Striptease (30s)", i: 5},
+                    {t: "Ruil kleding rechts", i: 4}, {t: "Beschrijf lichaam links", i: 4}
+                ],
+                quiz: [
+                    {q: "Stappen per dag (gemiddeld)?", a: ["3.000", "10.000", "15.000"], c: 1},
+                    {q: "Grootste orgaan intern?", a: ["Hart", "Lever", "Long"], c: 1},
+                    {q: "Tanden volwassene?", a: ["28", "32", "36"], c: 1},
+                    {q: "Eerste iPhone jaar?", a: ["2005", "2007", "2009"], c: 1},
+                    {q: "Hoofdstad Australië?", a: ["Sydney", "Melbourne", "Canberra"], c: 2},
+                    {q: "Planeten zonnestelsel?", a: ["7", "8", "9"], c: 1},
+                    {q: "Element 'Au'?", a: ["Zilver", "Aluminium", "Goud"], c: 2},
+                    {q: "Oscars voor Titanic?", a: ["9", "11", "13"], c: 1},
+                    {q: "Harten van een octopus?", a: ["1", "2", "3"], c: 2},
+                    {q: "Grootste land?", a: ["China", "USA", "Rusland"], c: 2}
+                ],
+                forbidden: [
+                    {w: "Orgasme", f: ["Hoogtepunt", "Plezier", "Klaarkomen"]}, {w: "Bescherming", f: ["Rubber", "Veilig", "Condoom"]},
+                    {w: "Daten", f: ["App", "Swipen", "Match"]}, {w: "Kamasutra", f: ["Positie", "Boek", "Intimiteit"]},
+                    {w: "Striptease", f: ["Uittrekken", "Dans", "Club"]}, {w: "Snelle date", f: ["Nacht", "Vreemde", "Casual"]},
+                    {w: "Prestatiebevorderend", f: ["Pil", "Potentie", "Kracht"]}, {w: "Afrodisiacum", f: ["Lust", "Middel", "Eten"]},
+                    {w: "Drietje", f: ["Drie", "Groep", "Intimiteit"]}, {w: "Bindingen", f: ["Touw", "Vastbinden", "Fetisj"]}
+                ],
+                spark: ["Geheime fantasie?", "Met wie hier zou je intiem zijn?", "Stoutste daad?", "Laatste intieme droom?",
+                    "Welk lichaamsdeel windt je op?", "Favoriete positie?", "Meest gênante moment?", "Dom of onderdanig?",
+                    "Ooit vreemdgegaan?", "Wanneer laatste intimiteit?", "Grootste afknapper?", "Ooit opgenomen?",
+                    "Ooit buiten gedaan?", "Favoriet speeltje?", "Ooit ervaring zelfde geslacht?"]
+            }
+        };
+
+        const CHAOS_EVENTS = {
+            de: [
+                {n: "IDENTITÄTSTAUSCH", t: "Tausche deine Identität!", d: "Du spielst als die Person rechts.", e: "swap"},
+                {n: "DOPPELTER EINSATZ", t: "Alles zählt doppelt!", d: "Strips werden verdoppelt.", e: "double"},
+                {n: "ZWANGS-21", t: "Nur 21 zählt!", d: "Verlust = -3 Strips", e: "bjforced"},
+                {n: "ROLLENTAUSCH", t: "Links wird Rechts", d: "Die Richtungen sind vertauscht.", e: "reverse"},
+                {n: "ALLE GEGEN ALLE", t: "Jeder gegen Jeden!", d: "Nächste Runde: Wer verliert, strippt alle.", e: "allvsall"}
+            ],
+            en: [
+                {n: "IDENTITY SWAP", t: "Swap your identity!", d: "You play as the person to your right.", e: "swap"},
+                {n: "DOUBLE STAKES", t: "Everything counts double!", d: "Strips are doubled.", e: "double"},
+                {n: "FORCED 21", t: "Only 21 counts!", d: "Loss = -3 Strips", e: "bjforced"},
+                {n: "ROLE REVERSAL", t: "Left becomes Right", d: "Directions are swapped.", e: "reverse"},
+                {n: "FREE FOR ALL", t: "Everyone against everyone!", d: "Next round: Loser strips everyone.", e: "allvsall"}
+            ],
+            es: [
+                {n: "CAMBIO DE IDENTIDAD", t: "¡Cambia tu identidad!", d: "Juegas como la persona a tu derecha.", e: "swap"},
+                {n: "APUESTA DOBLE", t: "¡Todo cuenta doble!", d: "Las prendas se duplican.", e: "double"},
+                {n: "21 FORZADO", t: "¡Sólo 21 cuenta!", d: "Pérdida = -3 prendas", e: "bjforced"},
+                {n: "REVERSO DE PAPELES", t: "Izquierda es Derecha", d: "Las direcciones están intercambiadas.", e: "reverse"},
+                {n: "TODOS CONTRA TODOS", t: "¡Todos contra todos!", d: "Siguiente ronda: El perdedor hace strip a todos.", e: "allvsall"}
+            ],
+            fr: [
+                {n: "ÉCHANGE D'IDENTITÉ", t: "Échange ton identité!", d: "Tu joues comme la personne à ta droite.", e: "swap"},
+                {n: "MISE DOUBLE", t: "Tout compte double!", d: "Les vêtements sont doublés.", e: "double"},
+                {n: "21 FORCÉ", t: "Seul 21 compte!", d: "Perte = -3 vêtements", e: "bjforced"},
+                {n: "RENVERSEMENT", t: "Gauche devient Droite", d: "Les directions sont inversées.", e: "reverse"},
+                {n: "CHACUN POUR SOI", t: "Chacun pour soi!", d: "Manche suivante: Le perdant fait stripper tout le monde.", e: "allvsall"}
+            ],
+            it: [
+                {n: "SCAMBIO IDENTITÀ", t: "Scambia la tua identità!", d: "Giochi come la persona a destra.", e: "swap"},
+                {n: "PUNTATA DOPPIA", t: "Tutto conta doppio!", d: "I capi sono raddoppiati.", e: "double"},
+                {n: "21 FORZATO", t: "Conta solo 21!", d: "Perdita = -3 capi", e: "bjforced"},
+                {n: "INVERSIONE", t: "Sinistra diventa Destra", d: "Le direzioni sono scambiate.", e: "reverse"},
+                {n: "OGNIUNO PER SÉ", t: "Ognuno per sé!", d: "Round successivo: Chi perde fa spogliare tutti.", e: "allvsall"}
+            ],
+            pt: [
+                {n: "TROCA DE IDENTIDADE", t: "Troca a tua identidade!", d: "Jogas como a pessoa à tua direita.", e: "swap"},
+                {n: "APOSTA DUPLA", t: "Tudo conta em dobro!", d: "As peças são duplicadas.", e: "double"},
+                {n: "21 FORÇADO", t: "Só 21 conta!", d: "Perda = -3 peças", e: "bjforced"},
+                {n: "REVERSÃO", t: "Esquerda torna-se Direita", d: "As direções são trocadas.", e: "reverse"},
+                {n: "TODOS CONTRA TODOS", t: "Todos contra todos!", d: "Rodada seguinte: O perdedor tira a roupa a todos.", e: "allvsall"}
+            ],
+            nl: [
+                {n: "IDENTITEITSWISSEL", t: "Ruil je identiteit!", d: "Je speelt als de persoon rechts van je.", e: "swap"},
+                {n: "DUBBELE INZET", t: "Alles telt dubbel!", d: "Kledingstukken worden verdubbeld.", e: "double"},
+                {n: "VERPLICHT 21", t: "Alleen 21 telt!", d: "Verlies = -3 kledingstukken", e: "bjforced"},
+                {n: "ROLWISSEL", t: "Links wordt Rechts", d: "De richtingen zijn omgedraaid.", e: "reverse"},
+                {n: "IEDEREEN TEGEN IEDEREEN", t: "Iedereen tegen iedereen!", d: "Volgende ronde: Verliezer doet iedereen uitkleden.", e: "allvsall"}
+            ]
+        };
+
+        // ==========================================
+        // SPIELLOGIK
+        // ==========================================
+        class FlowController {
+            constructor() {
+                this.energy = 50;
+                this.history = [];
+                this.chaosCooldown = 0;
+                this.lastCategories = [];
+                this.tensionPeaks = 0;
+                this.flowState = 'balanced';
+            }
+
+            selectNextCategory(forceChaos = false) {
+                if (forceChaos || (this.chaosCooldown >= 3 && Math.random() < this.getChaosChance())) {
+                    this.chaosCooldown = 0;
+                    this.energy = Math.min(100, this.energy + 30);
+                    this.tensionPeaks++;
+                    return 'chaos';
+                }
+                this.chaosCooldown++;
+
+                const categories = ['action', 'quiz', 'forbidden', 'spark'];
+                const available = categories.filter(c => !this.lastCategories.includes(c));
+                const pool = available.length > 0 ? available : categories;
+                
+                let weights = {};
+                pool.forEach(c => {
+                    if (this.energy > 75) {
+                        weights[c] = (c === 'quiz' || c === 'forbidden') ? 3 : 1;
+                    } else if (this.energy < 30) {
+                        weights[c] = (c === 'action' || c === 'spark') ? 3 : 1;
+                    } else {
+                        weights[c] = 2;
+                    }
+                });
+
+                const result = this.weightedRandom(pool, weights);
+                this.updateEnergy(result);
+                this.lastCategories.push(result);
+                if (this.lastCategories.length > 2) this.lastCategories.shift();
+                
+                return result;
+            }
+
+            getChaosChance() {
+                if (this.energy > 70) return 0.4;
+                if (this.energy < 30) return 0.1;
+                return 0.25;
+            }
+
+            updateEnergy(category) {
+                const changes = {
+                    'action': +15, 'quiz': -10, 'forbidden': -5, 'spark': +20, 'chaos': +30
+                };
+                this.energy = Math.max(0, Math.min(100, this.energy + (changes[category] || 0)));
+            }
+
+            weightedRandom(items, weights) {
+                const total = Object.values(weights).reduce((a,b) => a+b, 0);
+                let random = Math.random() * total;
+                for (let item of items) {
+                    random -= weights[item];
+                    if (random <= 0) return item;
+                }
+                return items[0];
+            }
+
+            addToHistory(type, task) {
+                this.history.push({type, task, energy: this.energy, time: Date.now()});
+                if (this.history.length > 20) this.history.shift();
+            }
+
+            getUniqueTask(category, deck) {
+                const recentTasks = this.history.slice(-8).map(h => h.task);
+                let attempts = 0;
+                let task;
+                do {
+                    task = this.getRandomFromDeck(category, deck);
+                    attempts++;
+                } while (recentTasks.includes(task) && attempts < 10);
+                return task;
+            }
+
+            getRandomFromDeck(cat, deck) {
+                const arr = deck[cat === 'spark' ? 'spark' : cat === 'action' ? 'actions' : cat === 'quiz' ? 'quiz' : 'forbidden'];
+                return arr[Math.floor(Math.random() * arr.length)];
+            }
+        }
+
+        class Game {
+            constructor() {
+                this.flow = new FlowController();
+                this.session = null;
+                this.pot = null;
+                this.bj = null;
+                this.betRounds = 1;
+                this.overbidAmount = 0;
+                this.currentLang = localStorage.getItem('funkenflug-lang') || 'de';
+                this.init();
+            }
+
+            t(key) {
+                return TRANSLATIONS[this.currentLang][key] || key;
+            }
+
+            getDeck() {
+                return DECKS[this.currentLang] || DECKS['de'];
+            }
+
+            getChaosEvents() {
+                return CHAOS_EVENTS[this.currentLang] || CHAOS_EVENTS['de'];
+            }
+
+            init() {
+                this.updateLanguageDisplay();
+                if(!localStorage.getItem('funkenflug-lang')) {
+                    this.showLanguageSelect();
+                } else {
+                    this.applyLanguageToUI();
+                    this.showStart();
+                }
+            }
+
+            showLanguageSelect() {
+                document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+                document.getElementById('overlay-lang').classList.add('active');
+                this.updateLangSelection();
+            }
+
+            updateLangSelection() {
+                document.querySelectorAll('.lang-item').forEach(item => {
+                    item.classList.remove('active');
+                    if(item.getAttribute('data-lang') === this.currentLang) {
+                        item.classList.add('active');
+                    }
+                });
+            }
+
+            setLanguage(lang) {
+                this.currentLang = lang;
+                localStorage.setItem('funkenflug-lang', lang);
+                this.updateLangSelection();
+                this.updateLanguageDisplay();
+            }
+
+            confirmLanguage() {
+                this.applyLanguageToUI();
+                this.showStart();
+            }
+
+            applyLanguageToUI() {
+                const t = TRANSLATIONS[this.currentLang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(t[key]) el.innerHTML = t[key];
+                });
+                document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                    const key = el.getAttribute('data-i18n-placeholder');
+                    if(t[key]) el.placeholder = t[key];
+                });
+            }
+
+            updateLanguageDisplay() {
+                const t = TRANSLATIONS[this.currentLang];
+                document.getElementById('currentFlag').innerText = t.flag;
+                document.getElementById('currentCode').innerText = t.langCode;
+            }
+
+            showStart() {
+                document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+                document.getElementById('overlay-start').classList.add('active');
+                document.getElementById('playerQueue').classList.add('hidden');
+                document.getElementById('fabContainer').classList.remove('active');
+                document.getElementById('potIndicator').classList.remove('active');
+            }
+
+            showLobby() {
+                this.session = {players: [], current: 0, round: 0, potActive: false};
+                this.addPlayer();
+                this.addPlayer();
+                document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+                document.getElementById('overlay-lobby').classList.add('active');
+            }
+
+            addPlayer() {
+                if(this.session.players.length >= 8) return;
+                const id = this.session.players.length;
+                this.session.players.push({
+                    id: id,
+                    name: this.t('players') + ' ' + (id + 1), 
+                    clothes: 5, 
+                    out: false,
+                    betMade: false,
+                    bonusItems: 0
+                });
+                this.renderLobby();
+            }
+
+            renderLobby() {
+                const div = document.getElementById('lobbyList');
+                div.innerHTML = '';
+                this.session.players.forEach((p,i) => {
+                    div.innerHTML += `
+                        <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.1);">
+                            <div style="width:36px;height:36px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:700;font-size:14px;">${p.name[0]}</div>
+                            <input value="${p.name}" onchange="game.session.players[${i}].name=this.value" 
+                                style="flex:1;background:transparent;border:none;color:#fff;font-size:16px;outline:none;">
+                            ${this.session.players.length > 2 ? 
+                                `<button onclick="game.session.players.splice(${i},1);game.renderLobby()" 
+                                    style="background:none;border:none;color:var(--danger);font-size:20px; width:36px;">×</button>` : 
+                                '<div style="width:36px;"></div>'}
+                        </div>
+                    `;
+                });
+                document.getElementById('btnStart').disabled = this.session.players.length < 2;
+            }
+
+            startGame() {
+                this.flow = new FlowController();
+                this.pot = null;
+                this.session.players.forEach(p => {
+                    p.clothes = 5; 
+                    p.out = false;
+                    p.betMade = false;
+                    p.bonusItems = 0;
+                });
+                this.session.current = 0;
+                this.session.round = 0;
+                this.session.potActive = false;
+                
+                document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+                document.getElementById('overlay-game').classList.add('active');
+                document.getElementById('playerQueue').classList.remove('hidden');
+                document.getElementById('fabContainer').classList.add('active');
+                
+                this.updateGameUI();
+            }
+
+            updateGameUI() {
+                let guard = 0;
+                while(this.session.players[this.session.current]?.out && guard++ < 20) {
+                    this.session.current = (this.session.current + 1) % this.session.players.length;
+                }
+                
+                const alive = this.session.players.filter(p => !p.out);
+                if(alive.length === 1) {
+                    this.endGame(alive[0]);
+                    return;
+                }
+
+                const q = document.getElementById('playerQueue');
+                q.innerHTML = '';
+                this.session.players.forEach((p,i) => {
+                    if(!p.out) {
+                        const active = i === this.session.current;
+                        const hasPot = this.pot && this.pot.owner === i;
+                        q.innerHTML += `
+                            <div class="player-chip ${active ? 'active' : ''} ${hasPot ? 'pot-owner' : ''}" 
+                                 style="${hasPot ? 'border-color: var(--gold); box-shadow: 0 0 10px rgba(212,175,55,0.5);' : ''}">
+                                ${p.name} ${hasPot ? '👑' : ''}
+                            </div>
+                        `;
+                    }
+                });
+
+                document.getElementById('view-dice').style.display = 'flex';
+                document.querySelectorAll('.game-card').forEach(c => c.classList.remove('active'));
+                document.getElementById('gameControls').style.display = 'flex';
+                document.getElementById('btnNext').style.display = 'none';
+                document.getElementById('btnHighStakes').style.display = 'none';
+            }
+
+            roll() {
+                this.session.round++;
+                document.getElementById('view-dice').style.display = 'none';
+                
+                const cat = this.flow.selectNextCategory();
+                
+                if(cat === 'chaos') {
+                    this.showChaos();
+                } else {
+                    this.showCategory(cat);
+                }
+            }
+
+            showChaos() {
+                const events = this.getChaosEvents();
+                const c = events[Math.floor(Math.random() * events.length)];
+                this.session.chaos = c;
+                
+                document.getElementById('card-chaos').classList.add('active');
+                document.getElementById('text-chaos').innerText = c.t;
+                document.getElementById('sub-chaos').innerText = c.d;
+                
+                if(c.e === 'swap') {
+                    const next = (this.session.current + 1) % this.session.players.length;
+                    if(!this.session.players[this.session.current].out && !this.session.players[next].out) {
+                        const t = this.session.players[this.session.current].name;
+                        this.session.players[this.session.current].name = this.session.players[next].name;
+                        this.session.players[next].name = t;
+                    }
+                }
+                
+                this.flow.addToHistory('chaos', c.n);
+            }
+
+            showCategory(cat) {
+                const deck = this.getDeck();
+                const task = this.flow.getUniqueTask(cat, deck);
+                
+                document.getElementById('card-' + cat).classList.add('active');
+                
+                if(cat === 'action') {
+                    document.getElementById('text-action').innerText = task.t;
+                    document.getElementById('sub-action').innerText = '🔥'.repeat(task.i);
+                } else if(cat === 'quiz') {
+                    document.getElementById('text-quiz').innerText = task.q;
+                    const opts = document.getElementById('quiz-options');
+                    opts.innerHTML = '';
+                    task.a.forEach((a, i) => {
+                        opts.innerHTML += `<button class="btn" style="margin-bottom:8px; text-transform: none;" 
+                            onclick="game.answerQuiz(${i===task.c})">${a}</button>`;
+                    });
+                } else if(cat === 'forbidden') {
+                    document.getElementById('text-tabu').innerText = task.w;
+                    document.getElementById('list-tabu').innerHTML = task.f.map(x => 
+                        `<div class="forbidden-word">${x}</div>`).join('');
+                } else if(cat === 'spark') {
+                    document.getElementById('text-z').innerText = task;
+                }
+                
+                if(cat === 'quiz') {
+                    document.getElementById('gameControls').style.display = 'none';
+                }
+                
+                this.flow.addToHistory(cat, typeof task === 'string' ? task : task.t || task.q || task.w);
+            }
+
+            answerQuiz(correct) {
+                if(correct) {
+                    this.next();
+                } else {
+                    this.fail();
+                }
+            }
+
+            success() {
+                this.next();
+            }
+
+            fail() {
+                let loss = 1;
+                if(this.session.chaos?.e === 'double') loss = 2;
+                
+                const p = this.session.players[this.session.current];
+                const newClothes = p.clothes - loss;
+                
+                if(newClothes <= 0 && !p.out) {
+                    if(newClothes === 0 && !p.betMade && !this.session.potActive) {
+                        this.offerBet();
+                        return;
+                    } else if(this.session.potActive && this.pot && this.pot.owner !== p.id) {
+                        this.checkChallenge();
+                        return;
+                    } else {
+                        p.out = true;
+                        p.clothes = 0;
+                        
+                        if(this.pot && this.pot.owner === p.id) {
+                            this.resolvePot();
+                        }
+                    }
+                } else {
+                    p.clothes = newClothes;
+                }
+                
+                this.next();
+            }
+
+            offerBet() {
+                document.getElementById('modal-bet').classList.add('active');
+                document.getElementById('videoUrl').value = '';
+                this.setBetRounds(1);
+            }
+
+            setBetRounds(rounds) {
+                this.betRounds = rounds;
+                document.getElementById('btnRounds1').style.opacity = rounds === 1 ? '1' : '0.5';
+                document.getElementById('btnRounds3').style.opacity = rounds === 3 ? '1' : '0.5';
+                
+                const p = this.session.players[this.session.current];
+                const time = p.clothes * 10;
+                const totalTime = time * rounds;
+                
+                const multiplier = rounds === 3 ? '3x ' + this.t('timePenalty') : this.t('immediate');
+                
+                document.getElementById('betSummary').innerHTML = `
+                    ${p.clothes} ${this.t('items')} × 10s × ${rounds} ${this.t('round')}<br>
+                    <strong>${this.t('total')}: ${totalTime}s</strong><br>
+                    <small style="color: var(--text-secondary)">${this.t('onLoss')}: ${multiplier}</small>
+                `;
+            }
+
+            confirmBet() {
+                const url = document.getElementById('videoUrl').value.trim();
+                if(!url) {
+                    alert(this.t('enterVideoLink'));
+                    return;
+                }
+                
+                const p = this.session.players[this.session.current];
+                const baseTime = p.clothes * 10;
+                
+                this.pot = {
+                    owner: p.id,
+                    videoUrl: url,
+                    baseTime: baseTime,
+                    rounds: this.betRounds,
+                    items: p.clothes,
+                    claimed: false,
+                    overbidTime: 0,
+                    challenger: null,
+                    currentRound: 1
+                };
+                
+                p.betMade = true;
+                p.clothes = 0;
+                p.out = false;
+                
+                this.session.potActive = true;
+                document.getElementById('modal-bet').classList.remove('active');
+                document.getElementById('potIndicator').classList.add('active');
+                document.getElementById('potText').innerText = `${this.t('pot')}: ${baseTime}s`;
+                
+                this.next();
+            }
+
+            fold() {
+                const p = this.session.players[this.session.current];
+                p.out = true;
+                document.getElementById('modal-bet').classList.remove('active');
+                this.next();
+            }
+
+            checkChallenge() {
+                const currentP = this.session.players[this.session.current];
+                
+                if(this.pot && this.pot.owner !== currentP.id && !currentP.betMade && currentP.clothes <= 0) {
+                    document.getElementById('modal-challenge').classList.add('active');
+                    const owner = this.session.players[this.pot.owner];
+                    document.getElementById('challengeInfo').innerHTML = 
+                        `<strong>${owner.name}</strong> ${this.t('hasBet')}<br>
+                         ${this.t('challengeFor')} <strong>${this.pot.items} ${this.t('items')}</strong>.`;
+                    document.getElementById('currentPotDetails').innerHTML = 
+                        `${this.pot.baseTime}s ${this.t('videoTime')}<br>1 ${this.t('item')} = 10s`;
+                } else {
+                    currentP.out = true;
+                    this.next();
+                }
+            }
+
+            acceptChallenge(rounds) {
+                const p = this.session.players[this.session.current];
+                this.pot.challenger = p.id;
+                this.pot.challengeRounds = rounds;
+                
+                document.getElementById('modal-challenge').classList.remove('active');
+                this.startBjChallenge();
+            }
+
+            declineChallenge() {
+                const p = this.session.players[this.session.current];
+                p.out = true;
+                document.getElementById('modal-challenge').classList.remove('active');
+                this.next();
+            }
+
+            startBjChallenge() {
+                const owner = this.session.players[this.pot.owner];
+                const challenger = this.session.players[this.pot.challenger];
+                
+                this.bj = {
+                    challenger: this.pot.challenger,
+                    owner: this.pot.owner,
+                    deck: this.createDeck(),
+                    ph: [],
+                    oh: [],
+                    round: 1,
+                    maxRounds: this.pot.challengeRounds || 1
+                };
+                
+                this.bj.ph.push(this.bj.deck.pop(), this.bj.deck.pop());
+                this.bj.oh.push(this.bj.deck.pop(), this.bj.deck.pop());
+                
+                document.getElementById('bjOppName').innerText = owner.name;
+                document.getElementById('modal-bj-challenge').classList.add('active');
+                document.getElementById('bjRoundInfo').innerText = `${this.t('round')} ${this.bj.round}/${this.bj.maxRounds}`;
+                
+                this.updateBjUI();
+            }
+
+            createDeck() {
+                const suits = ['♠','♥','♦','♣'];
+                const values = [
+                    {v:2,l:'2'},{v:3,l:'3'},{v:4,l:'4'},{v:5,l:'5'},
+                    {v:6,l:'6'},{v:7,l:'7'},{v:8,l:'8'},{v:9,l:'9'},
+                    {v:10,l:'10'},{v:10,l:'J'},{v:10,l:'Q'},
+                    {v:10,l:'K'},{v:11,l:'A'}
+                ];
+                let deck = [];
+                for(let s of suits) {
+                    for(let v of values) {
+                        deck.push({...v, s:s});
+                    }
+                }
+                for(let i=deck.length-1; i>0; i--) {
+                    const j = Math.floor(Math.random()*(i+1));
+                    [deck[i], deck[j]] = [deck[j], deck[i]];
+                }
+                return deck;
+            }
+
+            calcHand(hand) {
+                let sum = 0, aces = 0;
+                for(let c of hand) {
+                    sum += c.v;
+                    if(c.l === 'A') aces++;
+                }
+                while(sum > 21 && aces > 0) {
+                    sum -= 10;
+                    aces--;
+                }
+                return sum;
+            }
+
+            updateBjUI() {
+                const render = (hand, hide=false) => {
+                    return hand.map((c,i) => {
+                        if(hide && i === 1) return '<div class="bj-card hidden"></div>';
+                        const isRed = c.s === '♥' || c.s === '♦';
+                        return `<div class="bj-card ${isRed?'red':''}">${c.l}${c.s}</div>`;
+                    }).join('');
+                };
+
+                document.getElementById('bjPlayerHand').innerHTML = render(this.bj.ph);
+                document.getElementById('bjPlayerScore').innerText = this.calcHand(this.bj.ph);
+                document.getElementById('bjOppHand').innerHTML = render(this.bj.oh, true);
+                document.getElementById('bjOppScore').innerText = '?';
+            }
+
+            bjHit() {
+                this.bj.ph.push(this.bj.deck.pop());
+                this.updateBjUI();
+                if(this.calcHand(this.bj.ph) >= 21) {
+                    setTimeout(() => this.bjStand(), 500);
+                }
+            }
+
+            bjStand() {
+                document.getElementById('bjOppHand').innerHTML = this.bj.oh.map(c => {
+                    const isRed = c.s === '♥' || c.s === '♦';
+                    return `<div class="bj-card ${isRed?'red':''}">${c.l}${c.s}</div>`;
+                }).join('');
+                
+                let oppScore = this.calcHand(this.bj.oh);
+                while(oppScore < 17) {
+                    this.bj.oh.push(this.bj.deck.pop());
+                    oppScore = this.calcHand(this.bj.oh);
+                }
+                
+                document.getElementById('bjOppHand').innerHTML = this.bj.oh.map(c => {
+                    const isRed = c.s === '♥' || c.s === '♦';
+                    return `<div class="bj-card ${isRed?'red':''}">${c.l}${c.s}</div>`;
+                }).join('');
+                document.getElementById('bjOppScore').innerText = oppScore;
+                
+                setTimeout(() => this.resolveBjRound(), 1000);
+            }
+
+            resolveBjRound() {
+                const pScore = this.calcHand(this.bj.ph);
+                const oScore = this.calcHand(this.bj.oh);
+                const challenger = this.session.players[this.bj.challenger];
+                const owner = this.session.players[this.bj.owner];
+                
+                let challengerWon = false;
+                
+                if(pScore > 21) challengerWon = false;
+                else if(oScore > 21) challengerWon = true;
+                else if(pScore > oScore) challengerWon = true;
+                else if(pScore < oScore) challengerWon = false;
+                else challengerWon = false;
+                
+                if(challengerWon) {
+                    challenger.clothes += this.pot.items;
+                    challenger.bonusItems += Math.floor(this.pot.overbidTime / 5);
+                    
+                    if(this.bj.round >= this.bj.maxRounds) {
+                        this.pot.owner = challenger.id;
+                        alert(`${this.t('won')} ${this.t('takeover')}`);
+                        this.endBjChallenge();
+                    } else {
+                        this.bj.round++;
+                        this.bj.ph = [];
+                        this.bj.oh = [];
+                        this.bj.ph.push(this.bj.deck.pop(), this.bj.deck.pop());
+                        this.bj.oh.push(this.bj.deck.pop(), this.bj.deck.pop());
+                        document.getElementById('bjRoundInfo').innerText = `${this.t('round')} ${this.bj.round}/${this.bj.maxRounds}`;
+                        this.updateBjUI();
+                    }
+                } else {
+                    const multiplier = this.pot.challengeRounds === 3 ? 3 : 1;
+                    const penalty = this.pot.baseTime * multiplier;
+                    
+                    alert(`${this.t('lost')} ${this.t('penalty')}: ${penalty}s`);
+                    challenger.out = true;
+                    this.endBjChallenge();
+                }
+            }
+
+            endBjChallenge() {
+                document.getElementById('modal-bj-challenge').classList.remove('active');
+                this.bj = null;
+                
+                const alive = this.session.players.filter(p => !p.out);
+                if(alive.length === 1 && this.pot && alive[0].id === this.pot.owner) {
+                    this.resolvePot();
+                }
+                
+                this.next();
+            }
+
+            resolvePot() {
+                if(this.pot) {
+                    const owner = this.session.players[this.pot.owner];
+                    if(!owner.out) {
+                        owner.clothes = this.pot.items;
+                    }
+                    this.pot = null;
+                    this.session.potActive = false;
+                    document.getElementById('potIndicator').classList.remove('active');
+                }
+            }
+
+            next() {
+                this.session.chaos = null;
+                do {
+                    this.session.current = (this.session.current + 1) % this.session.players.length;
+                } while(this.session.players[this.session.current].out && this.session.players.some(p => !p.out));
+                
+                this.updateGameUI();
+            }
+
+            showBj() {
+                const alive = this.session.players.filter(p => !p.out && p.id !== this.session.current);
+                if(alive.length === 0) return;
+                
+                const opp = alive[Math.floor(Math.random() * alive.length)];
+                
+                this.bj = {
+                    p: this.session.current,
+                    o: opp.id,
+                    deck: this.createDeck(),
+                    ph: [],
+                    oh: [],
+                    casual: true
+                };
+                
+                this.bj.ph.push(this.bj.deck.pop(), this.bj.deck.pop());
+                this.bj.oh.push(this.bj.deck.pop(), this.bj.deck.pop());
+                
+                document.getElementById('bjOppName').innerText = opp.name;
+                document.getElementById('bjRoundInfo').innerText = this.t('highStakes');
+                document.getElementById('modal-bj-challenge').classList.add('active');
+                this.updateBjUI();
+            }
+
+            endGame(winner) {
+                document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+                document.getElementById('overlay-result').classList.add('active');
+                document.getElementById('winnerName').innerText = winner.name;
+                document.getElementById('playerQueue').classList.add('hidden');
+                document.getElementById('fabContainer').classList.remove('active');
+            }
+
+            reset() {
+                this.showStart();
+            }
+            
+            showRules() {
+                alert(`${this.t('rules')} FUNKENFLUG\n\n${this.t('highStakesEdition')}\n\n• 5 ${this.t('items')} ${this.t('perPlayer')}\n• 4 ${this.t('modes')}\n• ${this.t('blackjack')} 21\n• ${this.t('pot')} ${this.t('system')}`);
+            }
+        }
+
+        const game = new Game();
+    </script>
+</body>
+</html>
